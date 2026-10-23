@@ -1,0 +1,52 @@
+[
+  {
+    "id": "idea-01",
+    "title": "AI CBSE Class 10 Tutor",
+    "idea": "An AI-powered tutor for CBSE Class 10 students in India that personalizes math and science practice based on past board exams."
+  },
+  {
+    "id": "idea-02",
+    "title": "Automated Cloud FinOps for Startups",
+    "idea": "A lightweight autonomous agent that continuously analyzes AWS/GCP bills, identifies idle resources, and applies automated cost-reduction PRs."
+  },
+  {
+    "id": "idea-03",
+    "title": "Micro-SaaS Shopify SEO Optimizer",
+    "idea": "AI tool that scans Shopify product catalogs and automatically rewrites descriptions, meta tags, and alt text to boost organic search ranking."
+  },
+  {
+    "id": "idea-04",
+    "title": "B2B Compliance Evidence Collector",
+    "idea": "Continuous compliance platform that connects to GitHub, AWS, and Slack to auto-generate audit-ready evidence for SOC2 and ISO27001."
+  },
+  {
+    "id": "idea-05",
+    "title": "AI Voice Receptionist for Dental Clinics",
+    "idea": "Voice AI assistant that answers after-hours phone calls for dental clinics, triages emergencies, and books appointments directly into EHR."
+  },
+  {
+    "id": "idea-06",
+    "title": "Async Video Standup & Summary for Remote Teams",
+    "idea": "Tool where remote engineering teams record 60-second video updates that get transcribed, summarized, and posted into Jira and Slack."
+  },
+  {
+    "id": "idea-07",
+    "title": "API-First Carbon Accounting for Logistics",
+    "idea": "Developer API enabling freight forwarders and logistics companies to calculate and report per-shipment Scope 3 carbon emissions."
+  },
+  {
+    "id": "idea-08",
+    "title": "Local Contractor Invoice Factoring Marketplace",
+    "idea": "Fintech platform offering instant cash flow advances on unpaid invoices for independent home service contractors and electricians."
+  },
+  {
+    "id": "idea-09",
+    "title": "AI Legal Contract Risk Analyzer for Freelancers",
+    "idea": "Browser extension and web app that highlights predatory clauses, payment delays, and IP transfer terms in client freelance contracts."
+  },
+  {
+    "id": "idea-10",
+    "title": "Personalized Recipe & Grocery Cart Generator",
+    "idea": "Weekly meal planning app that creates customized family recipes based on dietary restrictions and auto-populates local grocery delivery carts."
+  }
+]
