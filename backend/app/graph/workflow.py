@@ -16,6 +16,7 @@ from backend.app.agents.single_agent import SingleAgent
 from backend.app.graph.debate import DebateEngine
 from backend.app.graph.fact_check import FactCheckEngine
 from backend.app.core.config import settings
+from backend.app.core.security import sanitize_idea_input
 
 logger = logging.getLogger(__name__)
 
@@ -105,9 +106,36 @@ class CoFounderWorkflow:
     # Graph Nodes
     # ==========================================================================
 
+    def _is_budget_exceeded(self, state: RunState) -> bool:
+        """Check if total tokens or USD cost exceed configured budget caps."""
+        options = state.get("options") or {}
+        max_tokens = options.get("max_tokens", settings.MAX_TOKENS_PER_RUN)
+        max_budget = options.get("max_budget_usd", settings.MAX_BUDGET_USD_PER_RUN)
+
+        telemetry = state.get("telemetry") or {}
+        total_tokens = telemetry.get("tokens", {}).get("total", 0) or state.get("token_usage", {}).get("total", 0)
+        total_cost = telemetry.get("cost_usd", 0.0)
+
+        if total_tokens >= max_tokens or total_cost >= max_budget:
+            logger.warning(
+                f"Budget cap triggered: tokens={total_tokens}/{max_tokens}, "
+                f"cost=${total_cost:.4f}/${max_budget:.2f}"
+            )
+            return True
+        return False
+
     async def intake_node(self, state: RunState) -> Dict[str, Any]:
-        """Validate input and initialize state structures."""
-        await self._emit_event("run_started", run_id=state["run_id"], idea=state["idea"])
+        """Validate input, sanitize prompt injection attempts, and initialize state structures."""
+        raw_idea = state.get("idea", "")
+        clean_idea, is_injection, detected_patterns = sanitize_idea_input(raw_idea)
+
+        await self._emit_event("run_started", run_id=state["run_id"], idea=clean_idea)
+        
+        errors = list(state.get("errors") or [])
+        if is_injection:
+            errors.append(f"Prompt injection pattern detected and neutralized: {detected_patterns}")
+            await self._emit_event("security_warning", detected=detected_patterns)
+
         run_mode = state.get("mode") or state.get("options", {}).get("mode") or self.mode
         telemetry = state.get("telemetry") or {
             "start_time": time.time(),
@@ -122,9 +150,11 @@ class CoFounderWorkflow:
             telemetry["start_time"] = time.time()
 
         return {
+            "idea": clean_idea,
             "status": "running",
             "mode": run_mode,
             "telemetry": telemetry,
+            "errors": errors,
             "scores": state.get("scores") or {"market": [], "prd": [], "architecture": [], "pitch": []},
             "retries": state.get("retries") or {"market": 0, "prd": 0, "architecture": 0, "pitch": 0},
             "token_usage": state.get("token_usage") or {"total": 0, "prompt": 0, "completion": 0},
@@ -386,15 +416,18 @@ class CoFounderWorkflow:
     async def finalize_node(self, state: RunState) -> Dict[str, Any]:
         """Finalize workflow and mark completion status."""
         final_status = "completed"
-        # If any agent was accepted after exhausting retries without passing threshold
-        retries = state.get("retries", {})
-        if any(r >= settings.MAX_RETRIES_PER_AGENT for r in retries.values()):
-            final_status = "needs_review"
+        if state.get("status") == "budget_exceeded":
+            final_status = "budget_exceeded"
+        else:
+            # If any agent was accepted after exhausting retries without passing threshold
+            retries = state.get("retries", {})
+            if any(r >= settings.MAX_RETRIES_PER_AGENT for r in retries.values()):
+                final_status = "needs_review"
 
         telemetry = copy.deepcopy(state.get("telemetry") or {})
         start_time = telemetry.get("start_time", time.time())
         telemetry["latency_sec"] = round(time.time() - start_time, 2)
-        telemetry["retries"] = sum(retries.values())
+        telemetry["retries"] = sum(state.get("retries", {}).values())
         tokens = telemetry.setdefault("tokens", {"prompt": 0, "completion": 0, "total": 0})
         if tokens.get("total", 0) == 0 and state.get("token_usage", {}).get("total", 0) > 0:
             tokens["total"] = state["token_usage"]["total"]
@@ -415,6 +448,9 @@ class CoFounderWorkflow:
 
     def should_retry_market(self, state: RunState) -> str:
         """Route Market Analyst after CEO review."""
+        if self._is_budget_exceeded(state):
+            state["status"] = "budget_exceeded"
+            return "fact_check"
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
             return "product_manager"
@@ -434,6 +470,9 @@ class CoFounderWorkflow:
 
     def should_retry_pm(self, state: RunState) -> str:
         """Route Product Manager after CEO review."""
+        if self._is_budget_exceeded(state):
+            state["status"] = "budget_exceeded"
+            return "fact_check"
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
             return "tech_architect"
@@ -452,6 +491,9 @@ class CoFounderWorkflow:
 
     def should_retry_architect(self, state: RunState) -> str:
         """Route Tech Architect after CEO review."""
+        if self._is_budget_exceeded(state):
+            state["status"] = "budget_exceeded"
+            return "fact_check"
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
             return "pitch_writer"
@@ -475,7 +517,10 @@ class CoFounderWorkflow:
             return "debate_round"
 
     def should_continue_debate(self, state: RunState) -> str:
-        """Route Debate Round (max rounds or resolved)."""
+        """Route Debate Round (max rounds, resolved, or budget exceeded)."""
+        if self._is_budget_exceeded(state):
+            state["status"] = "budget_exceeded"
+            return "fact_check"
         current_round = state.get("debate_round", 0)
         max_rounds = state.get("options", {}).get("debate_rounds", settings.DEBATE_MAX_ROUNDS)
         is_resolved = state.get("_debate_resolved", False)
@@ -486,6 +531,9 @@ class CoFounderWorkflow:
 
     def should_retry_pitch(self, state: RunState) -> str:
         """Route Pitch Writer after CEO final review."""
+        if self._is_budget_exceeded(state):
+            state["status"] = "budget_exceeded"
+            return "fact_check"
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
             return "fact_check"
@@ -540,7 +588,8 @@ class CoFounderWorkflow:
             self.should_retry_market,
             {
                 "product_manager": "product_manager",
-                "market_analyst": "market_analyst"
+                "market_analyst": "market_analyst",
+                "fact_check": "fact_check"
             }
         )
 
@@ -550,7 +599,8 @@ class CoFounderWorkflow:
             self.should_retry_pm,
             {
                 "tech_architect": "tech_architect",
-                "product_manager": "product_manager"
+                "product_manager": "product_manager",
+                "fact_check": "fact_check"
             }
         )
 
@@ -561,7 +611,8 @@ class CoFounderWorkflow:
             {
                 "debate_round": "debate_round",
                 "pitch_writer": "pitch_writer",
-                "tech_architect": "tech_architect"
+                "tech_architect": "tech_architect",
+                "fact_check": "fact_check"
             }
         )
 
@@ -570,7 +621,8 @@ class CoFounderWorkflow:
             self.should_continue_debate,
             {
                 "pitch_writer": "pitch_writer",
-                "debate_round": "debate_round"
+                "debate_round": "debate_round",
+                "fact_check": "fact_check"
             }
         )
 
