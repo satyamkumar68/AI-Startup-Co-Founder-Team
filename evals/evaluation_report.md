@@ -1,6 +1,9 @@
 # AI Startup Co-Founder Team - Evaluation Benchmark Report
 
-**Date:** 2026-10-21 13:09 UTC  
+> [!NOTE]
+> **Superseded Benchmark**: This legacy mock report has been superseded by the empirical multi-mode ablation benchmark in [`eval/results/ABLATION.md`](../eval/results/ABLATION.md). The active benchmark suite evaluates Single Agent (6.48), Multi-Agent No Debate (7.80), and Multi-Agent Debate (8.60) with cross-family model evaluation (`google/gemini-2.0-flash` judge) and blinded human review in [`eval/results/human_evaluation_summary.json`](../eval/results/human_evaluation_summary.json).
+
+**Date:** 2026-10-21 13:09 UTC (Legacy)  
 **Model:** `ollama:qwen3:4b`  
 **Mock Mode:** `True`  
 **Evaluated Ideas:** 10  

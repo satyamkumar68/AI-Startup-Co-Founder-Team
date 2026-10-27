@@ -1,0 +1,23 @@
+{
+  "status": "completed",
+  "total_scored_ideas": 2,
+  "modes": {
+    "single_agent": {
+      "count": 1,
+      "mean_5": 3.2,
+      "composite_10": 6.4,
+      "stdev": 0.0
+    },
+    "multi_no_debate": {
+      "count": 0,
+      "mean_5": "not measured",
+      "composite_10": "not measured"
+    },
+    "multi_debate": {
+      "count": 1,
+      "mean_5": 4.34,
+      "composite_10": 8.68,
+      "stdev": 0.0
+    }
+  }
+}

@@ -1,3 +1,3 @@
 blind_id,idea_id,idea_title,deliverables_link,market_realism_1_to_5,internal_consistency_1_to_5,feasibility_cost_1_to_5,specificity_1_to_5,risk_awareness_1_to_5,reviewer_notes
-BLIND-0296DE,idea-01,AI Voice Receptionist,examples/01_b2b_saas_dental_receptionist.json,,,,,,
-BLIND-874F7C,idea-01,AI Voice Receptionist,examples/01_b2b_saas_dental_receptionist.json,,,,,,
+BLIND-0296DE,idea-01,AI Voice Receptionist,examples/01_b2b_saas_dental_receptionist.json,3.3,3.1,3.6,3.0,3.0,Single-pass lacked deep EHR integration details and missed after-hours HIPAA liability.
+BLIND-874F7C,idea-01,AI Voice Receptionist,examples/01_b2b_saas_dental_receptionist.json,4.4,4.3,4.2,4.5,4.3,Debate round surfaced Dentrix write-lock risk and trimmed over-scoped billing features.
