@@ -88,7 +88,7 @@ export interface PitchWriterOutput {
 export interface RunDetail {
   run_id: string;
   idea: string;
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'needs_review';
+  status: 'queued' | 'running' | 'awaiting_approval' | 'completed' | 'failed' | 'cancelled' | 'needs_review' | 'budget_exceeded';
   market?: MarketAnalystOutput | null;
   prd?: ProductManagerOutput | null;
   architecture?: TechArchitectOutput | null;
@@ -99,6 +99,9 @@ export interface RunDetail {
   debate_messages?: DebateMessage[];
   total_tokens: number;
   total_cost_usd: number;
+  fact_check?: any | null;
+  telemetry?: any | null;
+  options?: any;
 }
 
 export interface DebateMessage {

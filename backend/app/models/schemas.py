@@ -291,6 +291,8 @@ class RunDetailResponse(BaseModel):
     completed_at: Optional[str] = None
     total_tokens: int = 0
     total_cost_usd: float = 0.0
+    fact_check: Optional[Dict[str, Any]] = None
+    telemetry: Optional[Dict[str, Any]] = None
 
 
 class RunResumeRequest(BaseModel):

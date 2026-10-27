@@ -43,7 +43,8 @@ async def _persist_and_broadcast_run_completion(
                 ("market_analyst", "market"),
                 ("pm", "prd"),
                 ("architect", "architecture"),
-                ("pitch_writer", "pitch")
+                ("pitch_writer", "pitch"),
+                ("fact_check", "fact_check")
             ]:
                 data = final_state.get(key)
                 if data:
@@ -106,6 +107,8 @@ async def _persist_and_broadcast_run_completion(
             _RUNS_MEM_STORE[run_id]["prd"] = final_state.get("prd")
             _RUNS_MEM_STORE[run_id]["architecture"] = final_state.get("architecture")
             _RUNS_MEM_STORE[run_id]["pitch"] = final_state.get("pitch")
+            _RUNS_MEM_STORE[run_id]["fact_check"] = final_state.get("fact_check")
+            _RUNS_MEM_STORE[run_id]["telemetry"] = final_state.get("telemetry")
             _RUNS_MEM_STORE[run_id]["scores"] = final_state.get("scores", {})
             _RUNS_MEM_STORE[run_id]["debate_messages"] = final_state.get("debate_log", [])
             _RUNS_MEM_STORE[run_id]["total_tokens"] = total_tokens

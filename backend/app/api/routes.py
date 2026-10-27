@@ -228,6 +228,14 @@ async def get_run(
         prd_data = next((o.output for o in outputs if o.agent == "pm"), None)
         arch_data = next((o.output for o in outputs if o.agent == "architect"), None)
         pitch_data = next((o.output for o in outputs if o.agent == "pitch_writer"), None)
+        fact_check_data = next((o.output for o in outputs if o.agent == "fact_check"), None)
+
+        # Fallback to in-memory store if DB record doesn't have fact_check yet
+        telemetry_data = None
+        if run_id in _RUNS_MEM_STORE:
+            if not fact_check_data:
+                fact_check_data = _RUNS_MEM_STORE[run_id].get("fact_check")
+            telemetry_data = _RUNS_MEM_STORE[run_id].get("telemetry")
 
         # Fetch scores
         sc_stmt = select(Score).where(Score.run_id == run_uuid).order_by(Score.created_at)
@@ -253,7 +261,9 @@ async def get_run(
             created_at=run_rec.created_at.isoformat() if run_rec.created_at else "",
             completed_at=run_rec.completed_at.isoformat() if run_rec.completed_at else None,
             total_tokens=run_rec.total_tokens or 0,
-            total_cost_usd=float(run_rec.total_cost_usd or 0.0)
+            total_cost_usd=float(run_rec.total_cost_usd or 0.0),
+            fact_check=fact_check_data,
+            telemetry=telemetry_data
         )
     except HTTPException:
         raise

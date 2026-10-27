@@ -12,6 +12,7 @@ import { DebateView } from './components/DebateView';
 import { TimelineView } from './components/TimelineView';
 import { ThemeSelector } from './components/ThemeSelector';
 import { ClassicMemoView } from './components/ClassicMemoView';
+import { FactCheckView } from './components/FactCheckView';
 
 // Next-Gen Workspace Components (4-Archetype Synthesis)
 import { TopMetricBanner } from './components/TopMetricBanner';
@@ -51,6 +52,8 @@ export function App() {
   // Input states
   const [ideaText, setIdeaText] = useState('');
   const [modelOverride, setModelOverride] = useState('ollama:qwen2.5-coder:1.5b');
+  const [runMode, setRunMode] = useState<'multi_debate' | 'multi_no_debate' | 'single_agent'>('multi_debate');
+  const [enableHumanReview, setEnableHumanReview] = useState(false);
   const [debateRounds, setDebateRounds] = useState(2);
   const [scoreThreshold, setScoreThreshold] = useState(7.0);
   const [showOptions, setShowOptions] = useState(false);
@@ -59,7 +62,10 @@ export function App() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [runData, setRunData] = useState<RunDetail | null>(null);
   const [currentAgent, setCurrentAgent] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'timeline' | 'market' | 'prd' | 'arch' | 'pitch' | 'debate'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'market' | 'prd' | 'arch' | 'pitch' | 'debate' | 'factcheck'>('timeline');
+  const [pendingApproval, setPendingApproval] = useState<{ awaiting: boolean; checkpoint?: string; description?: string; prd?: any; runId?: string } | null>(null);
+  const [reviewerFeedback, setReviewerFeedback] = useState('');
+  const [isResuming, setIsResuming] = useState(false);
   const [viewMode, setViewMode] = useState<'workspace' | 'classic'>('workspace');
   const [canvasMode, setCanvasMode] = useState<'boardroom' | 'graph' | 'kanban' | 'studio'>(() => {
     try {
@@ -186,6 +192,53 @@ export function App() {
     }
   }, [showHistory]);
 
+  // Check pending human review approval
+  const checkPendingApproval = async (runId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/runs/${runId}/pending`);
+      if (res.ok) {
+        const pData = await res.json();
+        if (pData.awaiting_approval) {
+          setPendingApproval({
+            awaiting: true,
+            prd: pData.prd,
+            runId: runId
+          });
+        }
+      }
+    } catch (e) {
+      console.debug('Pending check:', e);
+    }
+  };
+
+  // Resume paused human-in-the-loop workflow
+  const handleResumeApproval = async (approved: boolean) => {
+    if (!activeRunId) return;
+    setIsResuming(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/runs/${activeRunId}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          approved,
+          feedback: reviewerFeedback.trim() || undefined
+        })
+      });
+      if (res.ok) {
+        setPendingApproval(null);
+        setReviewerFeedback('');
+        setTimeout(() => loadRunDetail(activeRunId), 400);
+      } else {
+        const err = await res.json();
+        alert(`Error resuming: ${err.detail || res.statusText}`);
+      }
+    } catch (e: any) {
+      alert(`Network error: ${e.message}`);
+    } finally {
+      setIsResuming(false);
+    }
+  };
+
   // Load a specific run detail
   const loadRunDetail = async (runId: string) => {
     try {
@@ -195,6 +248,11 @@ export function App() {
         setRunData(data);
         setActiveRunId(runId);
         fetchDebateTranscript(runId);
+        if (data.status === 'awaiting_approval') {
+          checkPendingApproval(runId);
+        } else if (data.status === 'completed' || data.status === 'running') {
+          setPendingApproval(null);
+        }
       }
     } catch (err) {
       console.error('Failed to load run detail:', err);
@@ -259,6 +317,20 @@ export function App() {
           });
         }
 
+        if (packet.type === 'awaiting_human_review') {
+          setPendingApproval({
+            awaiting: true,
+            prd: (packet as any).content || runData?.prd,
+            runId: activeRunId
+          });
+          loadRunDetail(activeRunId);
+        }
+
+        if (packet.type === 'human_review_completed') {
+          setPendingApproval(null);
+          loadRunDetail(activeRunId);
+        }
+
         if (packet.type === 'run:completed' || packet.type === 'run_completed' || packet.type === 'run:failed') {
           setCurrentAgent(null);
           loadRunDetail(activeRunId);
@@ -309,9 +381,11 @@ export function App() {
         idea: ideaText.trim(),
         options: {
           provider: detectedProvider,
-          debate_rounds: Number(debateRounds),
+          debate_rounds: runMode === 'single_agent' ? 0 : (runMode === 'multi_no_debate' ? 0 : Number(debateRounds)),
           score_threshold: Number(scoreThreshold),
-          model_override: cleanModel || undefined
+          model_override: cleanModel || undefined,
+          mode: runMode,
+          enable_human_review: enableHumanReview
         }
       };
 
@@ -487,7 +561,7 @@ export function App() {
   };
 
   // Step/Tab navigation helper
-  const handleNavigateToTab = (tab: 'market' | 'prd' | 'arch' | 'pitch' | 'debate') => {
+  const handleNavigateToTab = (tab: 'market' | 'prd' | 'arch' | 'pitch' | 'debate' | 'factcheck') => {
     setActiveTab(tab);
     setCanvasMode('studio');
   };
@@ -697,6 +771,86 @@ export function App() {
             </div>
           )}
 
+          {/* HITL Checkpoint Review Banner */}
+          {(pendingApproval?.awaiting || runData?.status === 'awaiting_approval') && (
+            <div
+              id="hitl-review-banner"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: '16px 20px',
+                marginBottom: '20px',
+                background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.12), rgba(245, 158, 11, 0.08))',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.1)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    background: 'rgba(245, 158, 11, 0.25)',
+                    color: '#f59e0b',
+                    border: '1px solid rgba(245, 158, 11, 0.4)'
+                  }}>
+                    Checkpoint: {pendingApproval?.checkpoint || 'PRD Review'}
+                  </span>
+                  <strong style={{ fontSize: '0.98rem', color: 'var(--text-main)' }}>
+                    Human-in-the-Loop Approval Required
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => handleNavigateToTab('prd')}
+                  style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+                >
+                  🔍 Inspect PRD Deliverable
+                </button>
+              </div>
+
+              <div style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                {pendingApproval?.description || 'The CPO has finalized the Product Requirements Document (PRD). Review the scope, add founder guidance or feedback notes below, and approve to unlock Architecture, Pitch, and Cloud Cost analysis.'}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input
+                  id="hitl-feedback-input"
+                  type="text"
+                  placeholder="Optional founder feedback / steering notes (e.g., Focus on B2B SaaS pricing)..."
+                  value={reviewerFeedback}
+                  onChange={(e) => setReviewerFeedback(e.target.value)}
+                  style={{
+                    flex: '1 1 300px',
+                    background: 'var(--bg-surface)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '8px 12px',
+                    fontSize: '0.85rem'
+                  }}
+                />
+                <button
+                  id="btn-approve-resume"
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={isResuming}
+                  onClick={() => handleResumeApproval(true)}
+                  style={{ background: '#10b981', borderColor: '#059669', color: '#fff', fontWeight: 600, padding: '8px 16px' }}
+                >
+                  {isResuming ? 'Resuming Pipeline...' : '✓ Approve & Continue Execution'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Mode A: Boardroom Chat Feed Stream */}
           {canvasMode === 'boardroom' && (
             <BoardroomChatFeed
@@ -788,6 +942,15 @@ export function App() {
                     >
                       Partner Debate Transcript
                     </button>
+                    <button
+                      id="tab-factcheck"
+                      type="button"
+                      className={`btn ${activeTab === 'factcheck' ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => setActiveTab('factcheck')}
+                      style={{ fontSize: '0.84rem', padding: '6px 12px' }}
+                    >
+                      Fact-Check & Citations {runData?.fact_check?.audit_summary?.total_sources ? `(${runData.fact_check.audit_summary.total_sources})` : ''}
+                    </button>
                   </div>
 
                   {/* Active Tab Deliverable Panes */}
@@ -822,6 +985,10 @@ export function App() {
                         messages={debateMessages}
                         scores={runData?.scores}
                       />
+                    )}
+
+                    {activeTab === 'factcheck' && (
+                      <FactCheckView data={runData?.fact_check} />
                     )}
                   </div>
                 </>
@@ -906,7 +1073,7 @@ export function App() {
                 padding: '2px 0'
               }}
             >
-              {showOptions ? '▾ Hide Model and Debate Options' : '▸ Configure Model, Debate Rounds & CEO Threshold'}
+              {showOptions ? '▾ Hide Pipeline, Mode & Debate Options' : '▸ Configure Execution Mode, HITL Review, Model & Debate Protocol'}
             </button>
 
             {showOptions && (
@@ -920,6 +1087,39 @@ export function App() {
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--border)'
               }}>
+                <div>
+                  <label htmlFor="mode-select" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    Execution Mode
+                  </label>
+                  <select
+                    id="mode-select"
+                    value={runMode}
+                    onChange={(e) => {
+                      const mode = e.target.value as 'multi_debate' | 'multi_no_debate' | 'single_agent';
+                      setRunMode(mode);
+                      if (mode === 'single_agent' || mode === 'multi_no_debate') {
+                        setDebateRounds(0);
+                      } else if (mode === 'multi_debate' && debateRounds === 0) {
+                        setDebateRounds(2);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-main)',
+                      border: '1px solid var(--border)',
+                      padding: '7px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      outline: 'none',
+                      fontSize: '0.84rem'
+                    }}
+                  >
+                    <option value="multi_debate">Multi-Agent + Debate (Full Co-Founder Team)</option>
+                    <option value="multi_no_debate">Multi-Agent Fast (Linear, No Debate)</option>
+                    <option value="single_agent">Single-Agent Baseline (Fastest, 1 Agent)</option>
+                  </select>
+                </div>
+
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label htmlFor="model-select" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -1007,6 +1207,7 @@ export function App() {
                   <select
                     id="debate-rounds"
                     value={debateRounds}
+                    disabled={runMode === 'single_agent'}
                     onChange={(e) => setDebateRounds(Number(e.target.value))}
                     style={{
                       width: '100%',
@@ -1016,7 +1217,8 @@ export function App() {
                       padding: '7px 10px',
                       borderRadius: 'var(--radius-sm)',
                       outline: 'none',
-                      fontSize: '0.84rem'
+                      fontSize: '0.84rem',
+                      opacity: runMode === 'single_agent' ? 0.6 : 1
                     }}
                   >
                     <option value={2}>2 rounds (Triangular peer debate)</option>
@@ -1048,6 +1250,32 @@ export function App() {
                       fontSize: '0.84rem'
                     }}
                   />
+                </div>
+
+                <div style={{
+                  gridColumn: '1 / -1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  background: 'var(--bg-surface)',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--border)',
+                  marginTop: '4px'
+                }}>
+                  <input
+                    id="hitl-checkbox"
+                    type="checkbox"
+                    checked={enableHumanReview}
+                    onChange={(e) => setEnableHumanReview(e.target.checked)}
+                    style={{ cursor: 'pointer', accentColor: 'var(--primary)', width: '16px', height: '16px' }}
+                  />
+                  <label htmlFor="hitl-checkbox" style={{ fontSize: '0.84rem', color: 'var(--text-main)', cursor: 'pointer', userSelect: 'none' }}>
+                    <strong>Enable Human-in-the-Loop Review (HITL)</strong>
+                    <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Pauses execution at the PRD checkpoint so you can review scope, inject founder steering feedback, and approve before Architecture and Pitch generation.
+                    </span>
+                  </label>
                 </div>
               </div>
             )}

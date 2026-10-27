@@ -1,8 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import type { WebSocketEvent } from '../types';
+import type { WebSocketEvent, RunDetail } from '../types';
 
 interface Props {
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'needs_review';
+  status: RunDetail['status'];
   events: WebSocketEvent[];
   totalTokens: number;
   totalCostUsd: number;
@@ -53,6 +53,10 @@ export const TimelineView: React.FC<Props> = ({ status, events, totalTokens, tot
       ? 'Completed'
       : status === 'running'
       ? 'In progress'
+      : status === 'awaiting_approval'
+      ? 'Awaiting Founder Approval'
+      : status === 'budget_exceeded'
+      ? 'Budget Exceeded'
       : status === 'failed'
       ? 'Needs attention'
       : status === 'cancelled'
