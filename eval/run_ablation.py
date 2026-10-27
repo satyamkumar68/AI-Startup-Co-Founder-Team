@@ -274,7 +274,7 @@ async def run_ablation_study(
 
 
 def generate_markdown_report(results: Dict[str, Any]) -> str:
-    """Format ablation study results into a comprehensive, recruiter-ready Markdown document."""
+    """Format ablation study results into a comprehensive, production-grade Markdown document."""
     meta = results["metadata"]
     aggs = results["aggregates"]
     pw = results["pairwise"]

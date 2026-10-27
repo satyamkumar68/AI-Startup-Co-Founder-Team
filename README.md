@@ -654,9 +654,9 @@ ai-startup-co-founder-team/
 
 ---
 
-## 🎯 Recruiter & Technical Portfolio Highlights
+## 🎯 Technical System Highlights & Architectural Capabilities
 
-For hiring managers and engineering leads reviewing this repository:
+Key architectural capabilities, engineering patterns, and verification metrics of this platform:
 
 - **Stateful Multi-Agent Orchestration**: Engineered a cyclic LangGraph state machine orchestrating 5 specialized agents with CEO quality gates, automated retry budgets (max 2 retries), and structured debate protocols, lifting overall venture deliverable scores from **6.48 to 8.60 / 10.0 (+32.7%)**.
 - **Financial & Market Grounding**: Enforced zero-hallucination cloud cost modeling by pinning infrastructure calculations to a version-controlled catalog (`data/cloud_pricing.json`) and requiring live search citations for TAM/SAM/SOM market metrics, achieving 100% auditability across deliverables.

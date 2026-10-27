@@ -76,4 +76,4 @@ This document captures the key architectural, technical, and engineering decisio
   1. **Isolates Protocol Impact:** Disentangles structural depth from stylistic fluff.
   2. **Pairwise Blinded Comparison:** Eliminates position and model self-preference bias.
   3. **Zero Fabrication:** Unfilled human evaluations are stored transparently without invented numbers.
-- **Consequences:** Provides a defensible, reproducible benchmark for academic papers and recruiter technical reviews.
+- **Consequences:** Provides a defensible, reproducible benchmark for academic papers, independent technical audits, and system evaluations.

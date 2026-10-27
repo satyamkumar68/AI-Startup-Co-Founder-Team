@@ -28,7 +28,7 @@ graph TD
     P4 --> P5[Phase 5: Human-In-The-Loop Approval]
     P5 --> P6[Phase 6: Tracing, CI & Packaging]
     P6 --> P7[Phase 7: Empirical Ablation Benchmark]
-    P7 --> P8[Phase 8: Recruiter-Ready Docs & Resume Metrics]
+    P7 --> P8[Phase 8: Production Documentation & System Metrics]
 ```
 
 ---
@@ -205,11 +205,11 @@ graph TD
 
 ---
 
-### Phase 8: Recruiter-Ready Documentation & Professional Polish (Steps 10 & 11)
-**Objective:** Transform documentation into a portfolio centerpiece showcasing engineering rigor and empirical honesty.
+### Phase 8: Production Documentation & Verification Metrics (Steps 10 & 11)
+**Objective:** Deliver comprehensive documentation showcasing system architecture, engineering rigor, and empirical honesty.
 - **Tasks:**
   - Rewrite [README.md](file:///c:/Users/Satyam%20Kumar/AI%20Startup%20Co-Founder%20Team/README.md) following the high-impact structure:
-    1. Pitch + Architecture Overview + Live Demo / Video placeholders.
+    1. Pitch + Architecture Overview + Live Demo / Interactive Walkthrough.
     2. Empirical Ablation Results Table (Debate vs No-Debate vs Single-Agent).
     3. Mermaid Architecture Graph.
     4. Grounding & Anti-Hallucination Mechanism (Fact-check node, sources, pinned pricing).
@@ -217,7 +217,7 @@ graph TD
     6. Quickstart & Local Reproduction (`make ablate`).
     7. Methodological Limitations & Future Work.
   - Create [docs/DECISIONS.md](file:///c:/Users/Satyam%20Kumar/AI%20Startup%20Co-Founder%20Team/docs/DECISIONS.md) detailing key ADRs with rationale.
-  - Output recruiter-ready resume bullet point based strictly on measured metrics.
+  - Document production system highlights based strictly on measured metrics.
 - **Files Modified/Created:**
   - `README.md`
   - `docs/DECISIONS.md` (New)
@@ -238,4 +238,4 @@ graph TD
 | **Phase 5** | Human-In-The-Loop Approval | P1 | `[x] Completed` | LangGraph `interrupt`, PRD review API |
 | **Phase 6** | Observability, CI & Packaging | P1 | `[x] Completed` | Langfuse/LangSmith, GitHub Actions CI, Docker Compose |
 | **Phase 7** | Empirical Ablation Study | P0 | `[x] Completed` | `python eval/run_ablation.py`, `eval/results/ABLATION.md` |
-| **Phase 8** | Documentation & Resume Polish | P0 | `[x] Completed` | Recruiter-ready `README.md`, `docs/DECISIONS.md` |
+| **Phase 8** | Documentation & Verification Polish | P0 | `[x] Completed` | Production-ready `README.md`, `docs/DECISIONS.md` |
