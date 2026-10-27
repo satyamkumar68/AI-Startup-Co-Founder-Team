@@ -8,7 +8,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5+-646CFF.svg)](https://vitejs.dev/)
 [![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-FF6F00.svg)](https://langchain-ai.github.io/langgraph/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-80%20Passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-86%20Passed-brightgreen.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 An institutional-grade, multi-agent AI co-founder platform that transforms a **single-line startup idea** into a complete, investor-ready venture package: **Market Sizing (TAM/SAM/SOM)** with cited sources, **Product Requirements Document (PRD)** with scoped MVP boundaries, **Technical Architecture & Itemized Cloud Cost Estimate** with verified Mermaid diagrams, and a **16:9 Pitch Deck** validated through **peer debate protocols** and strict **CEO rubric quality gates**.
