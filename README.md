@@ -185,37 +185,37 @@ Downloads automatically format filenames from the user's idea:
 
 ```mermaid
 flowchart TD
-    User(["👤 Founder / Investor Input"]) --> Intake["Idea Intake & Security Sanitization\n(Prompt Injection Neutralization)"]
-    Intake --> Router{"Run Mode Selector\n(single_agent | multi_no_debate | multi_debate)"}
+    User["👤 Founder / Investor Input"] --> Intake["Idea Intake & Security Sanitization<br/>Prompt Injection Neutralization"]
+    Intake --> Router{"Run Mode Selector"}
 
-    Router -->|single_agent| SA["SingleAgent Baseline\n(1-Pass Venture Synthesis)"]
+    Router -->|Single Agent| SA["SingleAgent Baseline<br/>1-Pass Venture Synthesis"]
 
     subgraph Pipeline["Multi-Agent Co-Founder Pipeline"]
-        Router -->|multi_*| MA["🔍 Market Analyst Agent"]
-        MA --> CEO1{"⚖️ CEO Gate 1\n(Score >= 7.0?)"}
+        Router -->|Multi Agent| MA["🔍 Market Analyst Agent"]
+        MA --> CEO1{"⚖️ CEO Gate 1"}
         CEO1 -->|Pass / Cap| PM["📋 Product Manager Agent"]
-        CEO1 -->|Fail (< 7.0)| MA
+        CEO1 -->|Score Below 7.0| MA
 
-        PM --> CEO2{"⚖️ CEO Gate 2\n(Score >= 7.0?)"}
-        CEO2 -->|Pass| HITL{"🧑‍💼 Human-in-the-Loop Review\n(LangGraph Interrupt Checkpoint)"}
-        CEO2 -->|Fail (< 7.0)| PM
+        PM --> CEO2{"⚖️ CEO Gate 2"}
+        CEO2 -->|Pass| HITL{"🧑‍💼 Human-in-the-Loop Review<br/>Interrupt Checkpoint"}
+        CEO2 -->|Score Below 7.0| PM
 
         HITL -->|Approved / Edited PRD| TA["🏛️ Tech Architect Agent"]
-        TA --> CEO3{"⚖️ CEO Gate 3\n(Score >= 7.0?)"}
+        TA --> CEO3{"⚖️ CEO Gate 3"}
         CEO3 -->|Pass| DebateRouter{"Debate Check"}
-        CEO3 -->|Fail (< 7.0)| TA
+        CEO3 -->|Score Below 7.0| TA
 
-        DebateRouter -->|multi_debate| Debate["⚔️ Peer Debate Protocol\n(Round 1: Critiques ➔ Round 2: Rebuttals)"]
-        DebateRouter -->|multi_no_debate| PW["🎯 Pitch Writer Agent\n(10-12 Slides + Speaker Notes)"]
+        DebateRouter -->|With Debate| Debate["⚔️ Peer Debate Protocol<br/>Round 1: Critiques → Round 2: Rebuttals"]
+        DebateRouter -->|No Debate| PW["🎯 Pitch Writer Agent<br/>10-12 Slides + Speaker Notes"]
         Debate --> PW
-        PW --> FinalCEO{"⚖️ Final CEO Review\n(Overall Rubric Score)"}
+        PW --> FinalCEO{"⚖️ Final CEO Review"}
     end
 
-    SA --> FactCheck["🔎 FactCheck & Grounding Verification\n(Pinned Cloud Pricing + Citation Audit)"]
+    SA --> FactCheck["🔎 FactCheck & Grounding Verification<br/>Pinned Cloud Pricing + Citation Audit"]
     FinalCEO --> FactCheck
-    FactCheck --> Finalize["🏁 Finalize & Telemetry Accumulator\n(Latency, Cost USD, Tokens, Schema Repairs)"]
+    FactCheck --> Finalize["🏁 Finalize & Telemetry Accumulator<br/>Latency, Cost USD, Tokens, Schema Repairs"]
 
-    Finalize --> StateStore[("Database / Memory State\nSQLite / Postgres")]
+    Finalize --> StateStore[("Database & Memory State<br/>SQLite / Postgres")]
     StateStore --> WS["⚡ WebSocket Broadcast Server"]
     StateStore --> Export["📦 In-Memory Exporter Engine"]
 
