@@ -228,14 +228,14 @@ graph TD
 
 ## Phased Implementation Roadmap Summary
 
-| Phase | Title | Priority | Core Deliverable |
-| :--- | :--- | :---: | :--- |
-| **Phase 0** | Orientation & Baseline Audit | P0 | `docs/CURRENT_STATE.md` |
-| **Phase 1** | Run Modes Architecture | P0 | `single_agent`, `multi_no_debate`, `multi_debate` + telemetry |
-| **Phase 2** | Idea Dataset & Rubric Scoring | P0 | `eval/ideas.jsonl`, `eval/score.py`, `eval/human_scoring/` |
-| **Phase 3** | Grounding & Pinned Pricing | P0 | `data/cloud_pricing.json`, URL grounding, FactCheck node |
-| **Phase 4** | Reliability & Budget Guardrails | P1 | Budget caps, prompt injection defense, failover tests |
-| **Phase 5** | Human-In-The-Loop Approval | P1 | LangGraph `interrupt`, PRD review API |
-| **Phase 6** | Observability, CI & Packaging | P1 | Langfuse/LangSmith, GitHub Actions CI, Docker Compose |
-| **Phase 7** | Empirical Ablation Study | P0 | `make ablate`, `eval/results/ABLATION.md` |
-| **Phase 8** | Documentation & Resume Polish | P0 | Recruiter-ready `README.md`, `docs/DECISIONS.md` |
+| Phase | Title | Priority | Status | Core Deliverable |
+| :--- | :--- | :---: | :---: | :--- |
+| **Phase 0** | Orientation & Baseline Audit | P0 | `[x] Completed` | `docs/CURRENT_STATE.md` |
+| **Phase 1** | Run Modes Architecture | P0 | `[x] Completed` | `single_agent`, `multi_no_debate`, `multi_debate` + telemetry |
+| **Phase 2** | Idea Dataset & Rubric Scoring | P0 | `[x] Completed` | `eval/ideas.jsonl`, `eval/score.py`, `eval/human_scoring/` |
+| **Phase 3** | Grounding & Pinned Pricing | P0 | `[x] Completed` | `data/cloud_pricing.json`, URL grounding, FactCheck node |
+| **Phase 4** | Reliability & Budget Guardrails | P1 | `[x] Completed` | Budget caps, prompt injection defense, failover tests |
+| **Phase 5** | Human-In-The-Loop Approval | P1 | `[x] Completed` | LangGraph `interrupt`, PRD review API |
+| **Phase 6** | Observability, CI & Packaging | P1 | `[x] Completed` | Langfuse/LangSmith, GitHub Actions CI, Docker Compose |
+| **Phase 7** | Empirical Ablation Study | P0 | `[x] Completed` | `python eval/run_ablation.py`, `eval/results/ABLATION.md` |
+| **Phase 8** | Documentation & Resume Polish | P0 | `[x] Completed` | Recruiter-ready `README.md`, `docs/DECISIONS.md` |
