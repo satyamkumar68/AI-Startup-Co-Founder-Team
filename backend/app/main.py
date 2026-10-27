@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
 
 from backend.app.core.config import settings
+from backend.app.core.observability import setup_observability
 from backend.app.api.routes import router as api_router
 from backend.app.api.websocket import ws_manager
 from backend.app.db.session import init_db
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager to initialize DB tables and background resources."""
     logger.info("Initializing AI Startup Co-Founder Team backend...")
+    setup_observability()
     try:
         await init_db()
         logger.info("Database initialized successfully.")

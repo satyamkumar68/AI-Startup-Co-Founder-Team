@@ -26,11 +26,8 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest pytest-asyncio
 
-      - name: Run Pytest Unit Tests
-        run: pytest tests/unit/ -v
-
-      - name: Run Pytest Integration Tests
-        run: pytest tests/integration/test_api.py -v
+      - name: Run Pytest Unit & Integration Tests
+        run: pytest tests/ -v
 
   frontend-build:
     name: Frontend TypeScript & Vite Build
