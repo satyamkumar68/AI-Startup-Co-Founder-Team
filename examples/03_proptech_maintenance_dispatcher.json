@@ -1,0 +1,104 @@
+{
+  "metadata": {
+    "sample_id": "example-03",
+    "name": "FixPulse AI - Autonomous Property Maintenance Dispatcher",
+    "model": "ollama:qwen2.5-coder:1.5b",
+    "timestamp": "2026-10-27T10:45:00Z",
+    "parameters": {
+      "mode": "multi_debate",
+      "debate_rounds": 2,
+      "score_threshold": 7.0,
+      "provider": "ollama"
+    }
+  },
+  "idea": "Autonomous Property Maintenance Dispatcher for residential landlords that ingests tenant issue photos, verifies severity via vision AI, generates trade-specific contractor scopes, and collects competitive quotes.",
+  "market": {
+    "tam": { "value": "$19.4B", "unit": "USD", "source_url": "https://www.grandviewresearch.com/industry-analysis/property-management-software-market", "is_assumption": false },
+    "sam": { "value": "$4.2B", "unit": "USD", "source_url": "https://www.fortunebusinessinsights.com/property-management-software-market-102805", "is_assumption": false },
+    "som": { "value": "$320M", "unit": "USD", "source_url": "https://www.statista.com/statistics/property-management-market-size-us", "is_assumption": false },
+    "competitors": [
+      { "name": "AppFolio", "description": "Legacy property management cloud", "strengths": ["Huge market share"], "weaknesses": ["Slow clunky maintenance ticketing", "No autonomous contractor dispatch"] },
+      { "name": "Buildium", "description": "SMB property manager software", "strengths": ["Good resident portal"], "weaknesses": ["Requires property manager to manually call contractors"] },
+      { "name": "Latchel", "description": "24/7 maintenance coordination", "strengths": ["Human call center operators"], "weaknesses": ["High cost per unit per month ($4-$7)"] },
+      { "name": "Propertyware", "description": "Single-family rental platform", "strengths": ["Enterprise scale"], "weaknesses": ["Legacy 2000s interface", "Poor mobile experience"] },
+      { "name": "HappyCo", "description": "Multifamily operations & inspection", "strengths": ["Strong inspection tools"], "weaknesses": ["Does not handle automated vendor dispatching"] }
+    ],
+    "trends": [
+      "Property management labor shortage creating 72-hour average delays on emergency maintenance",
+      "Tenants increasingly prefer photo/text-based reporting over phone calls",
+      "Vision AI models capable of classifying water damage severity from phone photos"
+    ],
+    "risks": [
+      "Liability if emergency gas/water leak is misclassified as low priority",
+      "Contractor quote fraud or unlicensed worker dispatch",
+      "Tenant photo quality limitations (poor lighting, wrong angles)"
+    ]
+  },
+  "prd": {
+    "problem_statement": "Property managers spend up to 40% of their working hours fielding panicked maintenance calls, diagnosing plumbing/electrical issues with incomplete descriptions, and calling individual contractors for availability.",
+    "personas": [
+      {
+        "name": "Marcus Vance",
+        "role": "Independent Landlord (50 units)",
+        "pain_points": ["Gets 2 AM phone calls for leaking toilets", "Overpays emergency contractors"],
+        "goals": ["Automated emergency filtering and pre-negotiated trade dispatch"]
+      },
+      {
+        "name": "Chloe Simmons",
+        "role": "Apartment Tenant",
+        "pain_points": ["Submits portal tickets and waits 3 days with no status updates"],
+        "goals": ["Instant confirmation and real-time technician ETA tracking"]
+      }
+    ],
+    "features": [
+      { "name": "Vision AI Damage Triage", "priority": "P0", "description": "Classifies photo of issue into trade (Plumbing, HVAC, Electrical) and urgency." },
+      { "name": "Autonomous Contractor RFQ Engine", "priority": "P0", "description": "SMS broadcast of structured work order to 3 preferred licensed contractors." },
+      { "name": "Emergency Water/Gas Cutoff Guidance", "priority": "P0", "description": "Provides instant illustrated tenant steps to shut off main valves while waiting for technician." },
+      { "name": "Landlord Spend Approval Thresholds", "priority": "P1", "description": "Auto-approves repairs under $250; requests one-click SMS approval for higher bids." }
+    ],
+    "mvp_scope": "Support residential plumbing and HVAC repairs with SMS contractor dispatch within 8 weeks using 2 developers.",
+    "user_stories": [
+      "As a tenant with a leaking pipe, I want immediate valve shutoff instructions so my apartment doesn't flood.",
+      "As a property manager, I want bids collected automatically so I approve repairs with 1 tap.",
+      "As a contractor, I want complete photos and exact problem descriptions before driving out."
+    ],
+    "success_metrics": [
+      "Emergency issue triage time < 90 seconds",
+      "Contractor response rate > 80% within 1 hour",
+      "Landlord time saved: 12 hours / week per 100 units"
+    ]
+  },
+  "architecture": {
+    "stack": [
+      { "technology": "FastAPI", "category": "Backend", "justification": "High-throughput asynchronous webhooks for Twilio SMS and image uploads" },
+      { "technology": "PostgreSQL (Neon)", "category": "Database", "justification": "Transactional record of tickets, contractor licenses, and repair timestamps" },
+      { "technology": "Twilio Programmable Messaging", "category": "Communications", "justification": "Frictionless SMS interaction for both tenants and contractors without app installs" },
+      { "technology": "Cloudflare R2", "category": "Object Storage", "justification": "Zero egress fee photo and video attachment storage" },
+      { "technology": "GPT-4o Mini Vision", "category": "Vision AI", "justification": "Fast multimodal image analysis for plumbing and HVAC severity classification" }
+    ],
+    "diagram_mermaid": "graph TD\n  Tenant[Tenant SMS / Web Photo] --> Ingest[FastAPI Ingest]\n  Ingest --> R2[(Cloudflare R2 Photos)]\n  Ingest --> Vision[Vision AI Triage]\n  Vision --> TriageDecision{Urgent?}\n  TriageDecision -- Yes --> CutoffGuide[Send Tenant Valve Shutoff Guide]\n  TriageDecision -- Both --> RFQ[Twilio SMS Contractor Broadcast]\n  RFQ --> Contractors[Licensed Local Trades]\n  Contractors --> BidIngest[Bids Collected]\n  BidIngest --> Landlord[Landlord Approval Tap]",
+    "monthly_cost_estimate": {
+      "total_usd": 218.0,
+      "breakdown": {
+        "FastAPI Render Web Service": 25.0,
+        "Neon Postgres": 19.0,
+        "Cloudflare R2 Storage (100 GB)": 15.0,
+        "Twilio SMS (4,000 messages)": 32.0,
+        "Vision & Reasoning Tokens": 127.0
+      }
+    },
+    "risks": [
+      "Tenant photo ambiguity requiring secondary prompt clarifying question",
+      "Contractor no-shows requiring automated backup contractor escalation",
+      "Insurance validation for dispatched third-party trades"
+    ]
+  },
+  "scores": {
+    "market_realism": 4.4,
+    "internal_consistency": 4.6,
+    "feasibility_cost": 4.4,
+    "specificity": 4.3,
+    "risk_awareness": 4.2,
+    "composite_10": 8.78
+  }
+}

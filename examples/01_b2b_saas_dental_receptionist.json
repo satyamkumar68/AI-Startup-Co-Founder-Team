@@ -1,0 +1,105 @@
+{
+  "metadata": {
+    "sample_id": "example-01",
+    "name": "DentFlow AI - Voice Receptionist for Dental Clinics",
+    "model": "ollama:qwen2.5-coder:1.5b",
+    "timestamp": "2026-10-27T10:15:00Z",
+    "parameters": {
+      "mode": "multi_debate",
+      "debate_rounds": 2,
+      "score_threshold": 7.0,
+      "provider": "ollama"
+    }
+  },
+  "idea": "AI Voice Receptionist for Dental Practices that handles 24/7 inbound emergency calls, insurance pre-checks, and syncs appointments with Dentrix and Open Dental EHRs.",
+  "market": {
+    "tam": { "value": "$8.4B", "unit": "USD", "source_url": "https://www.grandviewresearch.com/industry-analysis/dental-practice-management-software-market", "is_assumption": false },
+    "sam": { "value": "$2.1B", "unit": "USD", "source_url": "https://www.fortunebusinessinsights.com/dental-software-market-103010", "is_assumption": false },
+    "som": { "value": "$140M", "unit": "USD", "source_url": "https://www.statista.com/outlook/hmo/digital-health/dental-health/worldwide", "is_assumption": false },
+    "competitors": [
+      { "name": "TrueLark", "description": "AI communications for beauty/dental", "strengths": ["Strong text bots"], "weaknesses": ["Voice latency > 1200ms", "Limited EHR sync"] },
+      { "name": "DentalXChange", "description": "Legacy claims clearinghouse", "strengths": ["Enterprise market reach"], "weaknesses": ["No autonomous voice AI", "Outdated API"] },
+      { "name": "NexHealth", "description": "Patient communication sync engine", "strengths": ["Universal EHR read/write"], "weaknesses": ["High per-seat pricing", "No voice receptionist"] },
+      { "name": "CareStack", "description": "Cloud-based practice management", "strengths": ["Full PMS suite"], "weaknesses": ["High migration friction"] },
+      { "name": "Syllable", "description": "Health system call center AI", "strengths": ["HIPAA certified"], "weaknesses": ["Aimed at hospitals, not SMB clinics"] }
+    ],
+    "trends": [
+      "Dental front-desk staff turnover exceeds 38% annually",
+      "Rising patient expectation for 24/7 instant appointment bookings",
+      "Voice AI latency dropping below 500ms enabling natural conversation"
+    ],
+    "risks": [
+      "HIPAA compliance liability for voice recordings and patient health information",
+      "EHR write-back conflicts when front desk double-books slots manually",
+      "Handling dental emergencies with strict liability disclaimers"
+    ]
+  },
+  "prd": {
+    "problem_statement": "Private dental clinics lose an estimated $75,000 annually per chair due to missed after-hours calls, unanswered emergency booking inquiries, and front-desk phone congestion during peak morning hours.",
+    "personas": [
+      {
+        "name": "Dr. Sarah Lin",
+        "role": "Lead Dentist & Practice Owner",
+        "pain_points": ["Misses high-value implant consultations after 5 PM", "High receptionist turnover"],
+        "goals": ["Fill schedule gaps automatically", "Zero unanswered patient calls"]
+      },
+      {
+        "name": "Mark Ramirez",
+        "role": "Practice Manager",
+        "pain_points": ["Spends 3 hours daily on routine insurance verification phone calls"],
+        "goals": ["Automate insurance pre-checks before patients arrive"]
+      }
+    ],
+    "features": [
+      { "name": "Autonomous Inbound Voice Dispatcher", "priority": "P0", "description": "Sub-600ms latency telephony voice bot handling scheduling, rescheduling, and FAQ." },
+      { "name": "Dentrix / Open Dental 2-Way Sync", "priority": "P0", "description": "Direct calendar write-back preventing double bookings." },
+      { "name": "Emergency Triage Routing", "priority": "P0", "description": "Detects dental trauma/severe pain and forwards to on-call dentist cell." },
+      { "name": "Insurance Eligibility Lookup", "priority": "P1", "description": "Pings clearinghouse APIs to verify copay and coverage eligibility." }
+    ],
+    "mvp_scope": "Deliver single-location clinic support with Dentrix local sync bridge within 8 weeks using 2 full-stack developers.",
+    "user_stories": [
+      "As a patient with a chipped tooth at 9 PM, I want to book a morning slot via phone so I get emergency care.",
+      "As a practice manager, I want calls logged in our EHR so staff don't have to take manual notes.",
+      "As a practice owner, I want HIPAA-compliant audio encryption so our clinic avoids regulatory fines."
+    ],
+    "success_metrics": [
+      "Front desk call capture rate > 98%",
+      "After-hours conversion into confirmed bookings > 45%",
+      "Average voice response latency < 650ms"
+    ]
+  },
+  "architecture": {
+    "stack": [
+      { "technology": "FastAPI", "category": "Backend", "justification": "Async ASGI engine for low-latency WebSocket telephony streaming" },
+      { "technology": "LiveKit / WebRTC", "category": "Audio Streaming", "justification": "Ultra low latency audio pipelines with sub-200ms frame transmission" },
+      { "technology": "PostgreSQL (Neon)", "category": "Database", "justification": "Serverless transactional storage with encrypted health record columns" },
+      { "technology": "Redis (Upstash)", "category": "Cache", "justification": "Stateful phone call session cache and slot locking mechanism" },
+      { "technology": "Deepgram Nova-2", "category": "Speech-to-Text", "justification": "Industry-leading accuracy for medical dental terminology" }
+    ],
+    "diagram_mermaid": "graph TD\n  Patient((Patient Call)) --> Twilio[Twilio Voice SIP]\n  Twilio --> LiveKit[LiveKit WebRTC Server]\n  LiveKit --> Engine[FastAPI Voice Engine]\n  Engine --> STT[Deepgram Nova-2]\n  Engine --> LLM[Claude 3.5 Sonnet]\n  Engine --> TTS[Cartesia Sonic]\n  Engine --> SyncBridge[Dentrix Sync Bridge]\n  SyncBridge --> ClinicEHR[(Clinic Dentrix DB)]",
+    "monthly_cost_estimate": {
+      "total_usd": 284.0,
+      "breakdown": {
+        "FastAPI Render Web Service": 25.0,
+        "Neon Serverless Postgres": 19.0,
+        "Upstash Redis": 10.0,
+        "Deepgram Transcription (2,000 mins)": 86.0,
+        "Cartesia TTS (2,000 mins)": 64.0,
+        "LLM Generation Tokens (800k)": 80.0
+      }
+    },
+    "risks": [
+      "EHR API local socket disconnections on Windows Server practice computers",
+      "Network jitter on clinic Wi-Fi causing voice dropouts",
+      "Dialect variations in dental terminology misrecognized by STT"
+    ]
+  },
+  "scores": {
+    "market_realism": 4.5,
+    "internal_consistency": 4.4,
+    "feasibility_cost": 4.2,
+    "specificity": 4.5,
+    "risk_awareness": 4.3,
+    "composite_10": 8.76
+  }
+}

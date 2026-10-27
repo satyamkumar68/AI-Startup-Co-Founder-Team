@@ -1,0 +1,104 @@
+{
+  "metadata": {
+    "sample_id": "example-02",
+    "name": "LedgerMatch AI - Autonomous 3-Way Invoice Reconciler",
+    "model": "ollama:qwen2.5-coder:1.5b",
+    "timestamp": "2026-10-27T10:30:00Z",
+    "parameters": {
+      "mode": "multi_debate",
+      "debate_rounds": 2,
+      "score_threshold": 7.0,
+      "provider": "ollama"
+    }
+  },
+  "idea": "Autonomous 3-Way Invoice Reconciliation Agent for mid-market manufacturing companies that matches Purchase Orders, Goods Received Notes (GRN), and vendor invoices, flagging line-item price creep.",
+  "market": {
+    "tam": { "value": "$12.8B", "unit": "USD", "source_url": "https://www.alliedmarketresearch.com/accounts-payable-automation-market", "is_assumption": false },
+    "sam": { "value": "$3.4B", "unit": "USD", "source_url": "https://www.marketsandmarkets.com/Market-Reports/accounts-payable-automation-market-1082.html", "is_assumption": false },
+    "som": { "value": "$210M", "unit": "USD", "source_url": "https://www.grandviewresearch.com/industry-analysis/accounts-payable-automation-market", "is_assumption": false },
+    "competitors": [
+      { "name": "Tipalti", "description": "Global payables automation platform", "strengths": ["Enterprise scale", "Cross-border tax compliance"], "weaknesses": ["Long 6-month implementation", "Heavy annual contract minimums"] },
+      { "name": "Vic.ai", "description": "AI autonomous accounts payable", "strengths": ["Strong machine learning on invoices"], "weaknesses": ["Weak 3-way matching with physical warehouse GRN slips"] },
+      { "name": "Stampli", "description": "Interactive AP collaboration", "strengths": ["Great communication audit trail"], "weaknesses": ["Requires manual line-item dispute handling"] },
+      { "name": "Airbase", "description": "Procure-to-pay spend management", "strengths": ["Consolidated corporate cards"], "weaknesses": ["Aimed at tech startups, not industrial manufacturing"] },
+      { "name": "Bill.com", "description": "SMB invoice payments", "strengths": ["High brand recognition"], "weaknesses": ["Rudimentary ERP integrations", "Lacks line-item variance modeling"] }
+    ],
+    "trends": [
+      "Mid-market finance teams face 20% invoice dispute rates due to supply chain inflation",
+      "Shift towards continuous audit and real-time ERP reconciliation",
+      "ERP migration to cloud systems (NetSuite, SAP Business One, Acumatica)"
+    ],
+    "risks": [
+      "Accounting liability for false duplicate payment approvals",
+      "Noisy optical character recognition on degraded paper warehouse delivery notes",
+      "Complex custom multi-subsidiary GL account structures in ERPs"
+    ]
+  },
+  "prd": {
+    "problem_statement": "Mid-market manufacturing accounting teams spend 240+ staff hours monthly manually comparing paper warehouse receipts, POs, and vendor PDF invoices to catch supplier price discrepancies.",
+    "personas": [
+      {
+        "name": "Elena Rostova",
+        "role": "Corporate Controller",
+        "pain_points": ["Catches supplier pricing overcharges months after payment", "Audit prep takes weeks"],
+        "goals": ["100% automated 3-way match before check run approval"]
+      },
+      {
+        "name": "Tom Bradley",
+        "role": "Accounts Payable Specialist",
+        "pain_points": ["Manual line-by-line data entry from scanned PDFs"],
+        "goals": ["Zero manual data entry on standard recurring suppliers"]
+      }
+    ],
+    "features": [
+      { "name": "Line-Item Fuzzy Match Engine", "priority": "P0", "description": "Tolerates unit of measure differences (e.g. box vs unit) and validates line prices." },
+      { "name": "ERP Sync Connector (NetSuite / QuickBooks Online)", "priority": "P0", "description": "Two-way transaction synchronization and automated bill creation." },
+      { "name": "Variance Alerting & Vendor Dispute Drafts", "priority": "P0", "description": "Drafts polite vendor credit request emails whenever variance exceeds $50." },
+      { "name": "Audit Trail Export (CSV & PDF)", "priority": "P1", "description": "One-click export of matching evidence for external financial auditors." }
+    ],
+    "mvp_scope": "Support NetSuite and QuickBooks Online with PDF invoice and scanned GRN ingestion within 8 weeks using 2 developers.",
+    "user_stories": [
+      "As an AP specialist, I want scanned bills automatically paired with open POs so I don't type line items.",
+      "As a controller, I want price creep flagged above 2% so we stop vendor overcharges before paying.",
+      "As an auditor, I want timestamped matching proof so SOX compliance reviews take hours instead of weeks."
+    ],
+    "success_metrics": [
+      "Match accuracy > 99.2% on standard purchase orders",
+      "AP processing cycle time reduced from 9 days to 24 hours",
+      "Discovered vendor overcharges average $14,000 / month per customer"
+    ]
+  },
+  "architecture": {
+    "stack": [
+      { "technology": "FastAPI", "category": "Backend", "justification": "Robust asynchronous document processing worker pipeline" },
+      { "technology": "PostgreSQL (Supabase)", "category": "Database", "justification": "Relational integrity for ledger lines and financial audit logs" },
+      { "technology": "Azure Form Recognizer / Document Intelligence", "category": "OCR", "justification": "Highest benchmark accuracy on tabular multi-page invoices" },
+      { "technology": "Redis / Celery", "category": "Queue", "justification": "Asynchronous batch document ingestion and webhook callbacks" },
+      { "technology": "React 18 + Vite", "category": "Frontend", "justification": "Side-by-side document highlight and dispute resolution interface" }
+    ],
+    "diagram_mermaid": "graph TD\n  Invoice[Vendor PDF] --> Ingest[FastAPI Ingest API]\n  Ingest --> Queue[Redis Task Queue]\n  Queue --> OCR[Azure Document Intelligence]\n  OCR --> Matcher[3-Way Reconciliation Engine]\n  Matcher --> ERP[(NetSuite / QBO API)]\n  Matcher --> DB[(Supabase Postgres)]\n  Matcher --> Alert[Slack / Email Dispute Alert]",
+    "monthly_cost_estimate": {
+      "total_usd": 315.0,
+      "breakdown": {
+        "FastAPI Container (Render)": 25.0,
+        "Supabase Database": 25.0,
+        "Azure Document OCR (5,000 pages)": 150.0,
+        "Upstash Redis Queue": 15.0,
+        "LLM Resolution Reasoning Tokens": 100.0
+      }
+    },
+    "risks": [
+      "Foreign exchange currency conversion fluctuations on international invoices",
+      "ERP rate limits during monthly close periods",
+      "Multi-page invoices spanning across PDF breaks"
+    ]
+  },
+  "scores": {
+    "market_realism": 4.6,
+    "internal_consistency": 4.5,
+    "feasibility_cost": 4.3,
+    "specificity": 4.4,
+    "risk_awareness": 4.5,
+    "composite_10": 8.92
+  }
+}
