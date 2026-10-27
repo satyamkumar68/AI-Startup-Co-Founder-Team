@@ -1,0 +1,634 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-27T06:09:40.236637+00:00",
+    "ideas_count": 5,
+    "modes_evaluated": [
+      "single_agent",
+      "multi_no_debate",
+      "multi_debate"
+    ],
+    "offline_simulated": true,
+    "provider": "ollama",
+    "model": "qwen2.5-coder:1.5b"
+  },
+  "runs": [
+    {
+      "id": "idea-01",
+      "title": "AI CBSE Class 10 Tutor",
+      "tier": "good",
+      "sector": "EdTech",
+      "modes": {
+        "single_agent": {
+          "mode": "single_agent",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 4.2,
+            "tokens": {
+              "total": 3200,
+              "prompt": 2240,
+              "completion": 960
+            },
+            "cost_usd": 0.016,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 3.4,
+            "internal_consistency": 3.2,
+            "feasibility_cost": 3.5,
+            "specificity": 3.1,
+            "risk_awareness": 3.0,
+            "composite_10": 6.48
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_no_debate": {
+          "mode": "multi_no_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 14.5,
+            "tokens": {
+              "total": 9800,
+              "prompt": 6860,
+              "completion": 2940
+            },
+            "cost_usd": 0.049,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.1,
+            "internal_consistency": 3.8,
+            "feasibility_cost": 4.0,
+            "specificity": 3.9,
+            "risk_awareness": 3.7,
+            "composite_10": 7.8
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_debate": {
+          "mode": "multi_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 22.8,
+            "tokens": {
+              "total": 15400,
+              "prompt": 10780,
+              "completion": 4620
+            },
+            "cost_usd": 0.077,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.4,
+            "internal_consistency": 4.3,
+            "feasibility_cost": 4.2,
+            "specificity": 4.4,
+            "risk_awareness": 4.2,
+            "composite_10": 8.6
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "idea-02",
+      "title": "Automated Cloud FinOps for Startups",
+      "tier": "good",
+      "sector": "DevOps",
+      "modes": {
+        "single_agent": {
+          "mode": "single_agent",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 4.2,
+            "tokens": {
+              "total": 3200,
+              "prompt": 2240,
+              "completion": 960
+            },
+            "cost_usd": 0.016,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 3.4,
+            "internal_consistency": 3.2,
+            "feasibility_cost": 3.5,
+            "specificity": 3.1,
+            "risk_awareness": 3.0,
+            "composite_10": 6.48
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_no_debate": {
+          "mode": "multi_no_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 14.5,
+            "tokens": {
+              "total": 9800,
+              "prompt": 6860,
+              "completion": 2940
+            },
+            "cost_usd": 0.049,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.1,
+            "internal_consistency": 3.8,
+            "feasibility_cost": 4.0,
+            "specificity": 3.9,
+            "risk_awareness": 3.7,
+            "composite_10": 7.8
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_debate": {
+          "mode": "multi_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 22.8,
+            "tokens": {
+              "total": 15400,
+              "prompt": 10780,
+              "completion": 4620
+            },
+            "cost_usd": 0.077,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.4,
+            "internal_consistency": 4.3,
+            "feasibility_cost": 4.2,
+            "specificity": 4.4,
+            "risk_awareness": 4.2,
+            "composite_10": 8.6
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "idea-03",
+      "title": "Micro-SaaS Shopify SEO Optimizer",
+      "tier": "good",
+      "sector": "E-Commerce",
+      "modes": {
+        "single_agent": {
+          "mode": "single_agent",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 4.2,
+            "tokens": {
+              "total": 3200,
+              "prompt": 2240,
+              "completion": 960
+            },
+            "cost_usd": 0.016,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 3.4,
+            "internal_consistency": 3.2,
+            "feasibility_cost": 3.5,
+            "specificity": 3.1,
+            "risk_awareness": 3.0,
+            "composite_10": 6.48
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_no_debate": {
+          "mode": "multi_no_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 14.5,
+            "tokens": {
+              "total": 9800,
+              "prompt": 6860,
+              "completion": 2940
+            },
+            "cost_usd": 0.049,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.1,
+            "internal_consistency": 3.8,
+            "feasibility_cost": 4.0,
+            "specificity": 3.9,
+            "risk_awareness": 3.7,
+            "composite_10": 7.8
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_debate": {
+          "mode": "multi_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 22.8,
+            "tokens": {
+              "total": 15400,
+              "prompt": 10780,
+              "completion": 4620
+            },
+            "cost_usd": 0.077,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.4,
+            "internal_consistency": 4.3,
+            "feasibility_cost": 4.2,
+            "specificity": 4.4,
+            "risk_awareness": 4.2,
+            "composite_10": 8.6
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "idea-04",
+      "title": "B2B Compliance Evidence Collector",
+      "tier": "good",
+      "sector": "Security",
+      "modes": {
+        "single_agent": {
+          "mode": "single_agent",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 4.2,
+            "tokens": {
+              "total": 3200,
+              "prompt": 2240,
+              "completion": 960
+            },
+            "cost_usd": 0.016,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 3.4,
+            "internal_consistency": 3.2,
+            "feasibility_cost": 3.5,
+            "specificity": 3.1,
+            "risk_awareness": 3.0,
+            "composite_10": 6.48
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_no_debate": {
+          "mode": "multi_no_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 14.5,
+            "tokens": {
+              "total": 9800,
+              "prompt": 6860,
+              "completion": 2940
+            },
+            "cost_usd": 0.049,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.1,
+            "internal_consistency": 3.8,
+            "feasibility_cost": 4.0,
+            "specificity": 3.9,
+            "risk_awareness": 3.7,
+            "composite_10": 7.8
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_debate": {
+          "mode": "multi_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 22.8,
+            "tokens": {
+              "total": 15400,
+              "prompt": 10780,
+              "completion": 4620
+            },
+            "cost_usd": 0.077,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.4,
+            "internal_consistency": 4.3,
+            "feasibility_cost": 4.2,
+            "specificity": 4.4,
+            "risk_awareness": 4.2,
+            "composite_10": 8.6
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "idea-05",
+      "title": "AI Voice Receptionist for Dental Clinics",
+      "tier": "good",
+      "sector": "HealthTech",
+      "modes": {
+        "single_agent": {
+          "mode": "single_agent",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 4.2,
+            "tokens": {
+              "total": 3200,
+              "prompt": 2240,
+              "completion": 960
+            },
+            "cost_usd": 0.016,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 3.4,
+            "internal_consistency": 3.2,
+            "feasibility_cost": 3.5,
+            "specificity": 3.1,
+            "risk_awareness": 3.0,
+            "composite_10": 6.48
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_no_debate": {
+          "mode": "multi_no_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 14.5,
+            "tokens": {
+              "total": 9800,
+              "prompt": 6860,
+              "completion": 2940
+            },
+            "cost_usd": 0.049,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.1,
+            "internal_consistency": 3.8,
+            "feasibility_cost": 4.0,
+            "specificity": 3.9,
+            "risk_awareness": 3.7,
+            "composite_10": 7.8
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        },
+        "multi_debate": {
+          "mode": "multi_debate",
+          "status": "completed",
+          "telemetry": {
+            "latency_sec": 22.8,
+            "tokens": {
+              "total": 15400,
+              "prompt": 10780,
+              "completion": 4620
+            },
+            "cost_usd": 0.077,
+            "schema_repairs": 0,
+            "fallback_count": 0
+          },
+          "verification": {
+            "verified_count": 3,
+            "assumption_count": 1,
+            "unverified_count": 0,
+            "flagged_claims": []
+          },
+          "rubric": {
+            "market_realism": 4.4,
+            "internal_consistency": 4.3,
+            "feasibility_cost": 4.2,
+            "specificity": 4.4,
+            "risk_awareness": 4.2,
+            "composite_10": 8.6
+          },
+          "deliverables": {
+            "market": {},
+            "prd": {},
+            "architecture": {},
+            "pitch": {}
+          }
+        }
+      }
+    }
+  ],
+  "aggregates": {
+    "single_agent": {
+      "avg_composite_score": 6.48,
+      "avg_latency_sec": 4.2,
+      "avg_tokens": 3200,
+      "avg_cost_usd": 0.016,
+      "dimensions": {
+        "market_realism": 3.4,
+        "internal_consistency": 3.2,
+        "feasibility_cost": 3.5,
+        "specificity": 3.1,
+        "risk_awareness": 3.0
+      }
+    },
+    "multi_no_debate": {
+      "avg_composite_score": 7.8,
+      "avg_latency_sec": 14.5,
+      "avg_tokens": 9800,
+      "avg_cost_usd": 0.049,
+      "dimensions": {
+        "market_realism": 4.1,
+        "internal_consistency": 3.8,
+        "feasibility_cost": 4.0,
+        "specificity": 3.9,
+        "risk_awareness": 3.7
+      }
+    },
+    "multi_debate": {
+      "avg_composite_score": 8.6,
+      "avg_latency_sec": 22.8,
+      "avg_tokens": 15400,
+      "avg_cost_usd": 0.077,
+      "dimensions": {
+        "market_realism": 4.4,
+        "internal_consistency": 4.3,
+        "feasibility_cost": 4.2,
+        "specificity": 4.4,
+        "risk_awareness": 4.2
+      }
+    }
+  },
+  "pairwise": {
+    "debate_vs_single": {
+      "wins": 5,
+      "losses": 0,
+      "ties": 0
+    },
+    "debate_vs_no_debate": {
+      "wins": 5,
+      "losses": 0,
+      "ties": 0
+    }
+  }
+}
