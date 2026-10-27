@@ -56,23 +56,28 @@ def test_evaluation_judge_heuristic_score():
 
 @pytest.mark.asyncio
 async def test_evaluation_judge_compare_pairwise():
+    from unittest.mock import AsyncMock, patch
     judge = EvaluationJudge()
-    deliv_a = {
-        "market": {"tam": {"source_url": "https://gartner.com"}, "competitors": [1, 2, 3, 4, 5], "risks": [1, 2, 3]},
-        "prd": {"features": [1], "personas": [1, 2], "user_stories": [1, 2, 3], "success_metrics": [1, 2]},
-        "architecture": {"components": [1], "monthly_cost_estimate": {"total_usd": 60.0, "breakdown": {1: 1}}, "risks": [1, 2]},
-        "pitch": {"slides": [1] * 10}
-    }
-    deliv_b = {
-        "market": {"tam": {}, "competitors": [], "risks": []},
-        "prd": {},
-        "architecture": {},
-        "pitch": {}
-    }
+    
+    score_high = RubricBreakdown(
+        market_realism=4.5,
+        internal_consistency=4.5,
+        feasibility_cost=4.0,
+        specificity=4.5,
+        risk_awareness=4.5
+    )
+    score_low = RubricBreakdown(
+        market_realism=2.0,
+        internal_consistency=2.0,
+        feasibility_cost=2.0,
+        specificity=2.0,
+        risk_awareness=2.0
+    )
 
-    res = await judge.compare_pairwise("AI edtech", deliv_a, deliv_b, "High Quality", "Low Quality")
-    assert res.winner == "A"
-    assert res.margin in ["clear", "decisive"]
+    with patch.object(judge, "score_deliverables", side_effect=[score_high, score_low]):
+        res = await judge.compare_pairwise("AI edtech", {}, {}, "High Quality", "Low Quality")
+        assert res.winner == "A"
+        assert res.margin == "decisive"
 
 
 def test_blinded_human_scoring_workflow(tmp_path):
