@@ -41,7 +41,8 @@ class TechArchitectAgent(BaseAgent):
         self,
         idea: str,
         market: Union[MarketAnalystOutput, Dict[str, Any]],
-        prd: Union[ProductManagerOutput, Dict[str, Any]]
+        prd: Union[ProductManagerOutput, Dict[str, Any]],
+        founder_guidance: Optional[str] = None
     ) -> Tuple[TechArchitectOutput, Dict[str, Any]]:
         """Generate architectural specifications from idea, market, and PRD."""
         market_dict = market.model_dump() if isinstance(market, MarketAnalystOutput) else market
@@ -71,6 +72,8 @@ class TechArchitectAgent(BaseAgent):
             f"- Valid Mermaid flowchart diagram\n"
             f"- Sane monthly cost estimate"
         )
+        if founder_guidance:
+            user_content += f"\n\nFounder Steering / Review Notes to Incorporate:\n{founder_guidance}"
 
         output, meta = await self.execute_structured(
             user_content=user_content,

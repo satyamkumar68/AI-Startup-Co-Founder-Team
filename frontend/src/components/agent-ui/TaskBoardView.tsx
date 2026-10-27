@@ -51,17 +51,17 @@ export const TaskBoardView: React.FC<TaskBoardViewProps> = ({
       title: 'TAM/SAM/SOM & Competitor Intel',
       agentName: 'Market Analyst',
       avatar: '🔍',
-      column: runData.market ? (marketScore !== undefined ? 'done' : 'review') : currentAgent?.includes('market') ? 'progress' : 'intake',
+      column: runData.market ? (marketScore !== undefined ? 'done' : 'review') : (currentAgent?.includes('market') || currentAgent === 'single_agent') ? 'progress' : 'intake',
       tabTarget: 'market',
       score: marketScore,
-      summary: runData.market ? `TAM: ${runData.market.tam} · ${runData.market.competitors?.length || 0} competitors profiled` : undefined
+      summary: runData.market ? `TAM: ${typeof runData.market.tam === 'object' ? (runData.market.tam as any)?.value : runData.market.tam} · ${runData.market.competitors?.length || 0} competitors profiled` : undefined
     },
     {
       id: 'task-prd',
       title: 'Product Scope & MVP Boundaries',
       agentName: 'Product Manager',
       avatar: '📋',
-      column: runData.prd ? (prdScore !== undefined ? 'done' : 'review') : currentAgent?.includes('prd') ? 'progress' : 'intake',
+      column: runData.prd ? (prdScore !== undefined ? 'done' : 'review') : (currentAgent?.includes('prd') || currentAgent === 'single_agent') ? 'progress' : 'intake',
       tabTarget: 'prd',
       score: prdScore,
       summary: runData.prd ? `${runData.prd.features?.length || 0} features prioritized · ${runData.prd.personas?.length || 0} target personas` : undefined
@@ -71,7 +71,7 @@ export const TaskBoardView: React.FC<TaskBoardViewProps> = ({
       title: 'System Architecture & Cloud Budget',
       agentName: 'Tech Architect',
       avatar: '🏛️',
-      column: runData.architecture ? (archScore !== undefined ? 'done' : 'review') : currentAgent?.includes('arch') ? 'progress' : 'intake',
+      column: runData.architecture ? (archScore !== undefined ? 'done' : 'review') : (currentAgent?.includes('arch') || currentAgent === 'single_agent') ? 'progress' : 'intake',
       tabTarget: 'arch',
       score: archScore,
       summary: runData.architecture ? `Est. $${runData.architecture.monthly_cost_estimate?.total_usd || 65}/mo · Mermaid diagram validated` : undefined
@@ -90,7 +90,7 @@ export const TaskBoardView: React.FC<TaskBoardViewProps> = ({
       title: 'Investor Deck & Talking Points',
       agentName: 'Pitch Writer',
       avatar: '🎯',
-      column: runData.pitch ? (pitchScore !== undefined ? 'done' : 'review') : currentAgent?.includes('pitch') ? 'progress' : 'intake',
+      column: runData.pitch ? (pitchScore !== undefined ? 'done' : 'review') : (currentAgent?.includes('pitch') || currentAgent === 'single_agent') ? 'progress' : 'intake',
       tabTarget: 'pitch',
       score: pitchScore,
       summary: runData.pitch ? `${runData.pitch.slides?.length || 0} slides crafted with speaker notes` : undefined

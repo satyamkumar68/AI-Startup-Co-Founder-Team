@@ -305,8 +305,16 @@ export function App() {
           loadRunDetail(activeRunId);
         }
 
-        if (packet.type === 'debate:message' || packet.type === 'debate_critique' || packet.type === 'debate_response') {
+        if (packet.type === 'debate:message' || packet.type === 'debate_message' || packet.type === 'debate_critique' || packet.type === 'debate_response') {
           fetchDebateTranscript(activeRunId);
+        }
+
+        if (packet.type === 'score_posted') {
+          loadRunDetail(activeRunId);
+        }
+
+        if (packet.type === 'fact_check_completed') {
+          loadRunDetail(activeRunId);
         }
 
         if (packet.type === 'model_switched') {
@@ -320,6 +328,8 @@ export function App() {
         if (packet.type === 'awaiting_human_review') {
           setPendingApproval({
             awaiting: true,
+            checkpoint: 'PRD Review',
+            description: 'The CPO has finalized the Product Requirements Document. Please review or add steering notes before technical architecture begins.',
             prd: (packet as any).content || runData?.prd,
             runId: activeRunId
           });
@@ -331,7 +341,7 @@ export function App() {
           loadRunDetail(activeRunId);
         }
 
-        if (packet.type === 'run:completed' || packet.type === 'run_completed' || packet.type === 'run:failed') {
+        if (packet.type === 'run:completed' || packet.type === 'run_completed' || packet.type === 'run:failed' || packet.type === 'run_failed') {
           setCurrentAgent(null);
           loadRunDetail(activeRunId);
         }

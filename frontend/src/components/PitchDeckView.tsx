@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PitchWriterOutput } from '../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
 export const PitchDeckView: React.FC<Props> = ({ data }) => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'carousel' | 'grid'>('carousel');
+  const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
 
   if (!data || !data.slides || data.slides.length === 0) {
     return <div style={{ color: 'var(--text-muted)', padding: '24px' }}>Pitch deck is being composed...</div>;
@@ -24,6 +25,28 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
     setCurrentSlideIndex((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
   };
 
+  // Keyboard navigation for presentation mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing into an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+
+      if (viewMode === 'carousel') {
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+          e.preventDefault();
+          setCurrentSlideIndex((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
+          setCurrentSlideIndex((prev) => (prev > 0 ? prev - 1 : slides.length - 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, slides.length]);
+
   return (
     <div className="pitch-deck-container" id="pitch-deck-container">
       {/* Top Toolbar */}
@@ -31,16 +54,31 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span className="badge badge-primary">Pitch presentation</span>
           <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-            {slides.length} slides
+            {slides.length} slides · Use ← / → to navigate
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {viewMode === 'carousel' && (
+            <button
+              id="btn-pitch-toggle-notes"
+              type="button"
+              className={`btn ${showSpeakerNotes ? 'btn-secondary' : 'btn-ghost'}`}
+              onClick={() => setShowSpeakerNotes((prev) => !prev)}
+              style={{ padding: '6px 12px', fontSize: '0.82rem' }}
+              title="Toggle speaker script and talking points"
+            >
+              🎙️ {showSpeakerNotes ? 'Hide notes' : 'Show notes'}
+            </button>
+          )}
+
           <button
             id="btn-pitch-view-carousel"
             type="button"
@@ -70,14 +108,18 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
             width: '100%',
             aspectRatio: '16 / 9',
             maxHeight: '480px',
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border)',
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid var(--glass-border)',
+            boxShadow: 'var(--shadow-glow)',
             borderRadius: 'var(--radius-lg)',
             padding: '36px 44px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            transition: 'all 0.25s ease'
           }}>
             {/* Slide Header */}
             <div>
@@ -90,9 +132,21 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
                 <span style={{
                   fontSize: '0.8rem',
                   color: 'var(--cyan)',
-                  fontWeight: 500
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase'
                 }}>
                   Slide {currentSlideIndex + 1} of {slides.length}
+                </span>
+                <span style={{
+                  fontSize: '0.74rem',
+                  padding: '3px 8px',
+                  borderRadius: '12px',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-muted)'
+                }}>
+                  Interactive Preview
                 </span>
               </div>
 
@@ -118,15 +172,16 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
                     alignItems: 'flex-start',
                     gap: '12px',
                     fontSize: '1rem',
-                    color: '#E2E8F0',
+                    color: 'var(--text-main)',
                     lineHeight: '1.5'
                   }}
                 >
                   <span style={{
-                    width: '6px',
-                    height: '6px',
+                    width: '7px',
+                    height: '7px',
                     borderRadius: '50%',
                     background: 'var(--primary)',
+                    boxShadow: '0 0 6px var(--primary)',
                     marginTop: '9px',
                     flexShrink: 0
                   }} />
@@ -145,9 +200,9 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
               marginTop: '16px'
             }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Investor presentation
+                Investor presentation · Autonomous Output
               </span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                 {currentSlideIndex + 1} / {slides.length}
               </span>
             </div>
@@ -167,7 +222,7 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
               className="btn btn-secondary"
               onClick={handlePrev}
             >
-              Previous slide
+              ← Previous slide
             </button>
 
             {/* Slide dot indicators */}
@@ -178,15 +233,16 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
                   type="button"
                   onClick={() => setCurrentSlideIndex(idx)}
                   style={{
-                    width: idx === currentSlideIndex ? '20px' : '6px',
-                    height: '6px',
-                    borderRadius: '3px',
+                    width: idx === currentSlideIndex ? '24px' : '7px',
+                    height: '7px',
+                    borderRadius: '4px',
                     background: idx === currentSlideIndex ? 'var(--primary)' : 'var(--border)',
+                    boxShadow: idx === currentSlideIndex ? 'var(--shadow-glow)' : 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
-                  title={`Go to slide ${idx + 1}`}
+                  title={`Go to slide ${idx + 1}: ${slides[idx].title}`}
                 />
               ))}
             </div>
@@ -197,30 +253,38 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
               className="btn btn-primary"
               onClick={handleNext}
             >
-              Next slide
+              Next slide →
             </button>
           </div>
 
           {/* Speaker Notes Script */}
-          <div style={{
-            background: 'var(--bg-subtle)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '18px 20px'
-          }}>
-            <h4 style={{ fontSize: '0.82rem', color: 'var(--warning)', fontWeight: 600, marginBottom: '6px' }}>
-              Speaker script and talking points
-            </h4>
-            <p style={{
-              color: 'var(--text-main)',
-              fontSize: '0.9rem',
-              lineHeight: '1.6',
-              fontStyle: 'italic',
-              whiteSpace: 'pre-line'
+          {showSpeakerNotes && (
+            <div style={{
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '18px 20px',
+              transition: 'all 0.2s ease'
             }}>
-              "{currentSlide.speaker_notes}"
-            </p>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.9rem' }}>🎙️</span>
+                <h4 style={{ fontSize: '0.84rem', color: 'var(--warning)', fontWeight: 600, margin: 0 }}>
+                  Speaker script and talking points
+                </h4>
+              </div>
+              <p style={{
+                color: 'var(--text-main)',
+                fontSize: '0.9rem',
+                lineHeight: '1.6',
+                fontStyle: 'italic',
+                whiteSpace: 'pre-line'
+              }}>
+                "{currentSlide.speaker_notes}"
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         /* Grid Overview */
@@ -239,10 +303,11 @@ export const PitchDeckView: React.FC<Props> = ({ data }) => {
               style={{
                 background: idx === currentSlideIndex ? 'rgba(79, 70, 229, 0.08)' : 'var(--bg-subtle)',
                 border: idx === currentSlideIndex ? '1px solid var(--primary)' : '1px solid var(--border)',
+                boxShadow: idx === currentSlideIndex ? 'var(--shadow-glow)' : 'none',
                 borderRadius: 'var(--radius-md)',
                 padding: '16px',
                 cursor: 'pointer',
-                transition: 'border-color 0.15s ease',
+                transition: 'all 0.18s ease',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '8px'

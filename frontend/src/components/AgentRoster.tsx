@@ -81,6 +81,9 @@ export const AgentRoster: React.FC<AgentRosterProps> = ({
 
     // Check if currently executing
     if (runData.status === 'running') {
+      if (currentAgent === 'single_agent' && (agentId === 'market' || agentId === 'prd' || agentId === 'arch' || agentId === 'pitch')) {
+        return { label: 'Synthesizing (Solo)...', state: 'running' };
+      }
       if (
         (agentId === 'market' && (currentAgent === 'market_analyst' || currentAgent === 'market')) ||
         (agentId === 'prd' && (currentAgent === 'product_manager' || currentAgent === 'pm')) ||

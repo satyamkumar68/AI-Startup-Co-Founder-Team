@@ -182,12 +182,16 @@ class CoFounderWorkflow:
             "pitch": [7.5]
         }
 
-        await self._emit_event("agent_completed", agent="single_agent", output={"status": "completed"})
-        return {
+        deliverables_dict = {
             "market": deliverables.market.model_dump(),
             "prd": deliverables.prd.model_dump(),
             "architecture": deliverables.architecture.model_dump(),
-            "pitch": deliverables.pitch.model_dump(),
+            "pitch": deliverables.pitch.model_dump()
+        }
+
+        await self._emit_event("agent_completed", agent="single_agent", output=deliverables_dict)
+        return {
+            **deliverables_dict,
             "token_usage": token_usage,
             "telemetry": telemetry,
             "scores": scores,
@@ -215,6 +219,9 @@ class CoFounderWorkflow:
     async def review_market_node(self, state: RunState) -> Dict[str, Any]:
         """CEO / Critic review of Market deliverable."""
         version = len(state.get("scores", {}).get("market", [])) + 1
+        current_threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
+        self.critic_agent.score_threshold = current_threshold
+
         review, meta = await self.critic_agent.review(
             target_agent="market",
             deliverable_content=state["market"],
@@ -256,6 +263,9 @@ class CoFounderWorkflow:
     async def review_pm_node(self, state: RunState) -> Dict[str, Any]:
         """CEO / Critic review of PRD deliverable."""
         version = len(state.get("scores", {}).get("prd", [])) + 1
+        current_threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
+        self.critic_agent.score_threshold = current_threshold
+
         review, meta = await self.critic_agent.review(
             target_agent="prd",
             deliverable_content=state["prd"],
@@ -312,7 +322,15 @@ class CoFounderWorkflow:
     async def tech_architect_node(self, state: RunState) -> Dict[str, Any]:
         """Execute Tech Architect agent."""
         await self._emit_event("agent_started", agent="architect", run_id=state["run_id"])
-        output, meta = await self.architect_agent.run(state["idea"], state["market"], state["prd"])
+        founder_notes = [e for e in state.get("errors", []) if "Human reviewer feedback:" in e]
+        founder_guidance = "\n".join(founder_notes) if founder_notes else None
+
+        output, meta = await self.architect_agent.run(
+            state["idea"],
+            state["market"],
+            state["prd"],
+            founder_guidance=founder_guidance
+        )
 
         token_usage = copy.deepcopy(state.get("token_usage", {}))
         token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
@@ -329,6 +347,9 @@ class CoFounderWorkflow:
     async def review_architect_node(self, state: RunState) -> Dict[str, Any]:
         """CEO / Critic review of Architecture deliverable."""
         version = len(state.get("scores", {}).get("architecture", [])) + 1
+        current_threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
+        self.critic_agent.score_threshold = current_threshold
+
         review, meta = await self.critic_agent.review(
             target_agent="architecture",
             deliverable_content=state["architecture"],
@@ -411,6 +432,9 @@ class CoFounderWorkflow:
     async def review_pitch_node(self, state: RunState) -> Dict[str, Any]:
         """CEO / Critic review of Pitch Deck."""
         version = len(state.get("scores", {}).get("pitch", [])) + 1
+        current_threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
+        self.critic_agent.score_threshold = current_threshold
+
         review, meta = await self.critic_agent.review(
             target_agent="pitch",
             deliverable_content=state["pitch"],

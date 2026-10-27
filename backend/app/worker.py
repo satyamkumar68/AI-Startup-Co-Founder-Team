@@ -189,20 +189,33 @@ async def execute_run_pipeline(run_id: str, idea: str, options: Dict[str, Any]) 
             key_map = {"market_analyst": "market", "pm": "prd", "architect": "architecture", "pitch_writer": "pitch"}
             state_key = key_map.get(agent)
 
-            if state_key and run_id in _RUNS_MEM_STORE:
-                _RUNS_MEM_STORE[run_id][state_key] = output_data
+            if agent == "single_agent" and isinstance(output_data, dict):
+                for k in ["market", "prd", "architecture", "pitch"]:
+                    if k in output_data and run_id in _RUNS_MEM_STORE:
+                        _RUNS_MEM_STORE[run_id][k] = output_data[k]
+                try:
+                    run_uuid = uuid.UUID(run_id)
+                    async with AsyncSessionLocal() as session:
+                        for k, aname in [("market", "market_analyst"), ("prd", "pm"), ("architecture", "architect"), ("pitch", "pitch_writer")]:
+                            if k in output_data:
+                                session.add(AgentOutput(run_id=run_uuid, agent=aname, version=1, output=output_data[k]))
+                        await session.commit()
+                except Exception as e:
+                    logger.debug(f"Incremental single_agent agent_output write: {e}")
 
-            try:
-                run_uuid = uuid.UUID(run_id)
-                async with AsyncSessionLocal() as session:
-                    existing = (await session.execute(
-                        select(AgentOutput).where(AgentOutput.run_id == run_uuid, AgentOutput.agent == agent)
-                    )).scalars().all()
-                    rec = AgentOutput(run_id=run_uuid, agent=agent, version=len(existing) + 1, output=output_data)
-                    session.add(rec)
-                    await session.commit()
-            except Exception as e:
-                logger.debug(f"Incremental agent_output write: {e}")
+            elif state_key and run_id in _RUNS_MEM_STORE:
+                _RUNS_MEM_STORE[run_id][state_key] = output_data
+                try:
+                    run_uuid = uuid.UUID(run_id)
+                    async with AsyncSessionLocal() as session:
+                        existing = (await session.execute(
+                            select(AgentOutput).where(AgentOutput.run_id == run_uuid, AgentOutput.agent == agent)
+                        )).scalars().all()
+                        rec = AgentOutput(run_id=run_uuid, agent=agent, version=len(existing) + 1, output=output_data)
+                        session.add(rec)
+                        await session.commit()
+                except Exception as e:
+                    logger.debug(f"Incremental agent_output write: {e}")
 
         elif ev_type == "score_posted":
             target = event.get("target")

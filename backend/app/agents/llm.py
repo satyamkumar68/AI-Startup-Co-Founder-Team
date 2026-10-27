@@ -132,16 +132,30 @@ class MultiProviderLLM:
         if not self.fallback_models:
             return False
 
-        # Filter out current model
-        candidates = [m for m in self.fallback_models if m != self.model and f"{self.provider}:{self.model}" != m]
+        def _norm(name: str) -> str:
+            return name.replace("openrouter/", "").replace("openrouter:", "").replace("ollama:", "").replace("ollama/", "").strip().lower()
+
+        cur_norm = _norm(self.model)
+        candidates = [m for m in self.fallback_models if _norm(m) != cur_norm]
+
+        err_lower = str(error_reason).lower()
 
         # If API key is rejected (401 / Unauthorized), bypass remaining models of the same provider
-        err_lower = str(error_reason).lower()
         if any(term in err_lower for term in ["401", "unauthorized", "user not found"]):
             if self.provider == "openrouter":
                 candidates = [m for m in candidates if not (m.startswith("openrouter/") or "openrouter" in m)]
                 if not candidates:
                     candidates = ["ollama:qwen2.5-coder:1.5b"]
+
+        # If local Ollama connection refused, bypass Ollama models and fallback to cloud if key available
+        if any(term in err_lower for term in ["connecterror", "connection refused", "failed to connect", "11434", "target machine actively refused"]):
+            if self.provider == "ollama":
+                candidates = [m for m in candidates if not (m.startswith("ollama:") or "ollama" in m)]
+                if not candidates and settings.OPENROUTER_API_KEY and len(settings.OPENROUTER_API_KEY.strip()) > 10:
+                    candidates = [
+                        "openrouter/google/gemini-2.0-flash-exp:free",
+                        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+                    ]
 
         if not candidates:
             if self.provider != "ollama":

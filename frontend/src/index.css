@@ -23,6 +23,12 @@
   --danger: #EF4444;
   --cyan: #0EA5E9;
 
+  --glass-bg: rgba(20, 27, 38, 0.78);
+  --glass-border: rgba(79, 70, 229, 0.25);
+  --shadow-glow: 0 0 25px -5px rgba(79, 70, 229, 0.35);
+  --gradient-accent: linear-gradient(135deg, #4F46E5 0%, #0EA5E9 100%);
+  --badge-glow: 0 0 12px rgba(16, 185, 129, 0.4);
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -51,6 +57,12 @@
   --warning: #B45309;
   --danger: #B91C1C;
   --cyan: #0369A1;
+
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(139, 58, 43, 0.2);
+  --shadow-glow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+  --gradient-accent: linear-gradient(135deg, #8B3A2B 0%, #B45309 100%);
+  --badge-glow: 0 0 8px rgba(44, 110, 73, 0.3);
 
   --font-display: 'Newsreader', Georgia, serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -81,6 +93,12 @@
   --danger: #EF4444;
   --cyan: #38BDF8;
 
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  --glass-border: rgba(56, 189, 248, 0.2);
+  --shadow-glow: 0 0 25px -5px rgba(2, 132, 199, 0.35);
+  --gradient-accent: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+  --badge-glow: 0 0 12px rgba(56, 189, 248, 0.4);
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -109,6 +127,12 @@
   --warning: #F59E0B;
   --danger: #EF4444;
   --cyan: #2DD4BF;
+
+  --glass-bg: rgba(13, 43, 34, 0.8);
+  --glass-border: rgba(16, 185, 129, 0.25);
+  --shadow-glow: 0 0 25px -5px rgba(16, 185, 129, 0.35);
+  --gradient-accent: linear-gradient(135deg, #10B981 0%, #2DD4BF 100%);
+  --badge-glow: 0 0 12px rgba(52, 211, 153, 0.45);
 
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -139,6 +163,12 @@
   --danger: #F43F5E;
   --cyan: #06B6D4;
 
+  --glass-bg: rgba(19, 17, 38, 0.82);
+  --glass-border: rgba(139, 92, 246, 0.35);
+  --shadow-glow: 0 0 28px -4px rgba(139, 92, 246, 0.45);
+  --gradient-accent: linear-gradient(135deg, #8B5CF6 0%, #06B6D4 100%);
+  --badge-glow: 0 0 14px rgba(6, 182, 212, 0.5);
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -168,6 +198,12 @@
   --danger: #EF4444;
   --cyan: #F97316;
 
+  --glass-bg: rgba(32, 25, 21, 0.82);
+  --glass-border: rgba(245, 158, 11, 0.25);
+  --shadow-glow: 0 0 25px -5px rgba(245, 158, 11, 0.35);
+  --gradient-accent: linear-gradient(135deg, #F59E0B 0%, #FB923C 100%);
+  --badge-glow: 0 0 12px rgba(251, 146, 60, 0.45);
+
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -196,6 +232,12 @@
   --warning: #D97706;
   --danger: #DC2626;
   --cyan: #0284C7;
+
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(37, 99, 235, 0.2);
+  --shadow-glow: 0 10px 30px -10px rgba(37, 99, 235, 0.12);
+  --gradient-accent: linear-gradient(135deg, #2563EB 0%, #0284C7 100%);
+  --badge-glow: 0 0 10px rgba(5, 150, 105, 0.35);
 
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -233,9 +275,29 @@ body {
 
 /* Structural Surface Panel */
 .glass-panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-focus);
 }
 
 /* Header */
@@ -2375,5 +2437,243 @@ body {
   border-color: var(--border-focus);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+/* ==========================================================================
+   Theme Selector & Dynamic Swatch Dropdown
+   ========================================================================== */
+.theme-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.theme-selector-container {
+  position: relative;
+  display: inline-block;
+  user-select: none;
+}
+
+.theme-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  cursor: pointer;
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.theme-trigger-btn:hover,
+.theme-trigger-btn.open {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.theme-swatch-duo {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.swatch-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.swatch-accent-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-surface);
+  right: -2px;
+  bottom: -2px;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.theme-active-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.theme-chevron {
+  font-size: 0.6rem;
+  color: var(--text-subtle);
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+}
+
+.theme-trigger-btn.open .theme-chevron {
+  transform: rotate(180deg);
+}
+
+.theme-dropdown-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  max-height: 440px;
+  overflow-y: auto;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.45), var(--shadow-glow);
+  z-index: 1000;
+  padding: 8px;
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.theme-dropdown-header {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-subtle);
+  padding: 8px 10px 4px 10px;
+}
+
+.theme-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
+}
+
+.theme-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  font-family: var(--font-body);
+}
+
+.theme-dropdown-item:hover {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  transform: translateX(2px);
+}
+
+.theme-dropdown-item.active {
+  background: rgba(79, 70, 229, 0.12);
+  border-color: var(--border-focus);
+}
+
+.theme-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.theme-palette-dots {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.palette-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.theme-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.theme-item-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-item-desc {
+  font-size: 0.69rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme-active-check {
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-left: 8px;
+}
+
+/* Micro-animations and Pulsing Indicators */
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.5);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+    box-shadow: 0 0 0 5px rgba(79, 70, 229, 0);
+  }
+}
+
+.status-pill.running {
+  background: rgba(79, 70, 229, 0.2);
+  color: #818cf8;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.roster-agent-card.running {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+
 
 
