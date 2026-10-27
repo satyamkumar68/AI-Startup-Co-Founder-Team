@@ -94,7 +94,7 @@ def test_multi_no_debate_router_bypass():
     assert wf.should_retry_market(state) == "product_manager"
     assert wf.should_retry_pm(state) == "tech_architect"
     assert wf.should_retry_architect(state) == "pitch_writer"
-    assert wf.should_retry_pitch(state) == "finalize"
+    assert wf.should_retry_pitch(state) == "fact_check"
 
 
 @pytest.mark.asyncio

@@ -14,6 +14,7 @@ from backend.app.agents.pitch_writer import PitchWriterAgent
 from backend.app.agents.ceo_critic import CEOCriticAgent
 from backend.app.agents.single_agent import SingleAgent
 from backend.app.graph.debate import DebateEngine
+from backend.app.graph.fact_check import FactCheckEngine
 from backend.app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -74,6 +75,7 @@ class CoFounderWorkflow:
         self.critic_agent = CEOCriticAgent(model=self.model_critic, provider=self.provider, **agent_kwargs)
         self.debate_engine = DebateEngine(provider=self.provider, model=self.model_default, **agent_kwargs)
         self.single_agent = SingleAgent(model=self.model_default, provider=self.provider, **agent_kwargs)
+        self.fact_check_engine = FactCheckEngine()
 
         # Build compiled graph
         self.graph = self._build_graph()
@@ -368,6 +370,19 @@ class CoFounderWorkflow:
             "_last_review": review.model_dump()
         }
 
+    async def fact_check_node(self, state: RunState) -> Dict[str, Any]:
+        """Execute FactCheck verification node scanning claims and building verification appendix."""
+        await self._emit_event("agent_started", agent="fact_check", run_id=state["run_id"])
+        verification = self.fact_check_engine.verify(state)
+        await self._emit_event(
+            "fact_check_completed",
+            verified_count=verification.get("verified_count", 0),
+            assumption_count=verification.get("assumption_count", 0),
+            unverified_count=verification.get("unverified_count", 0),
+            flagged_claims=verification.get("flagged_claims", [])
+        )
+        return {"verification": verification}
+
     async def finalize_node(self, state: RunState) -> Dict[str, Any]:
         """Finalize workflow and mark completion status."""
         final_status = "completed"
@@ -473,14 +488,14 @@ class CoFounderWorkflow:
         """Route Pitch Writer after CEO final review."""
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
-            return "finalize"
+            return "fact_check"
         scores = state.get("scores", {}).get("pitch", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("pitch", 0)
         threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
 
         if score >= threshold or retries >= settings.MAX_RETRIES_PER_AGENT:
-            return "finalize"
+            return "fact_check"
         state.setdefault("retries", {})["pitch"] = retries + 1
         return "pitch_writer"
 
@@ -504,6 +519,7 @@ class CoFounderWorkflow:
         builder.add_node("debate_round", self.debate_round_node)
         builder.add_node("pitch_writer", self.pitch_writer_node)
         builder.add_node("review_pitch", self.review_pitch_node)
+        builder.add_node("fact_check", self.fact_check_node)
         builder.add_node("finalize", self.finalize_node)
 
         # 2. Add edges
@@ -516,7 +532,7 @@ class CoFounderWorkflow:
                 "market_analyst": "market_analyst"
             }
         )
-        builder.add_edge("single_agent", "finalize")
+        builder.add_edge("single_agent", "fact_check")
         builder.add_edge("market_analyst", "review_market")
 
         builder.add_conditional_edges(
@@ -563,11 +579,12 @@ class CoFounderWorkflow:
             "review_pitch",
             self.should_retry_pitch,
             {
-                "finalize": "finalize",
+                "fact_check": "fact_check",
                 "pitch_writer": "pitch_writer"
             }
         )
 
+        builder.add_edge("fact_check", "finalize")
         builder.add_edge("finalize", END)
 
         return builder.compile(checkpointer=self.checkpointer)

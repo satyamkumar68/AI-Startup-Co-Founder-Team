@@ -85,7 +85,9 @@ class WebSearchTool:
                 {
                     "title": f"Estimated context for {query}",
                     "href": "https://en.wikipedia.org/wiki/Market_research",
-                    "body": f"Automated market intelligence estimate for query: {query}"
+                    "url": "https://en.wikipedia.org/wiki/Market_research",
+                    "body": f"Automated market intelligence estimate for query: {query}",
+                    "snippet": f"Automated market intelligence estimate for query: {query}"
                 }
             ],
             "low_confidence": True,
@@ -116,10 +118,14 @@ class WebSearchTool:
             )
             cleaned = []
             for item in results:
+                link = item.get("href", item.get("link", item.get("url", "")))
+                snip = item.get("body", item.get("snippet", ""))
                 cleaned.append({
                     "title": item.get("title", ""),
-                    "href": item.get("href", item.get("link", "")),
-                    "body": item.get("body", item.get("snippet", ""))
+                    "href": link,
+                    "url": link,
+                    "body": snip,
+                    "snippet": snip
                 })
             return cleaned
         except Exception as err:
@@ -128,7 +134,9 @@ class WebSearchTool:
                 {
                     "title": f"Market Data for {query}",
                     "href": "https://techcrunch.com/category/startups/",
-                    "body": f"Industry analysis and startup trend data concerning {query}."
+                    "url": "https://techcrunch.com/category/startups/",
+                    "body": f"Industry analysis and startup trend data concerning {query}.",
+                    "snippet": f"Industry analysis and startup trend data concerning {query}."
                 }
             ]
 
@@ -152,7 +160,9 @@ class WebSearchTool:
                 {
                     "title": r.get("title", ""),
                     "href": r.get("url", ""),
-                    "body": r.get("content", "")
+                    "url": r.get("url", ""),
+                    "body": r.get("content", ""),
+                    "snippet": r.get("content", "")
                 }
                 for r in data.get("results", [])
             ]

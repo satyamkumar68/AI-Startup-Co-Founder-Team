@@ -12,13 +12,30 @@ class MarketMetric(BaseModel):
     unit: Optional[str] = Field(default="USD", description="Currency or metric unit")
     estimated: bool = Field(default=False, description="Flag true if calculated or approximated")
     source_url: Optional[str] = Field(default=None, description="Direct citation URL or research link")
+    retrieved_at: Optional[str] = Field(default=None, description="ISO timestamp or date of data retrieval")
+    is_assumption: bool = Field(default=False, description="Flag true if figure is an ungrounded or derived assumption")
     notes: Optional[str] = Field(default=None, description="Calculation methodology or context")
 
     @model_validator(mode="before")
     @classmethod
     def parse_from_string(cls, data: Any) -> Any:
+        from datetime import datetime, timezone
+        now_date = datetime.now(timezone.utc).date().isoformat()
         if isinstance(data, str):
-            return {"value": data, "unit": "USD", "estimated": True, "source_url": "https://example.com/market-estimate"}
+            return {
+                "value": data,
+                "unit": "USD",
+                "estimated": True,
+                "source_url": None,
+                "retrieved_at": now_date,
+                "is_assumption": True
+            }
+        if isinstance(data, dict):
+            url = data.get("source_url")
+            if not url or "example.com" in str(url) or not str(url).startswith("http"):
+                data["is_assumption"] = True
+            if not data.get("retrieved_at"):
+                data["retrieved_at"] = now_date
         return data
 
 

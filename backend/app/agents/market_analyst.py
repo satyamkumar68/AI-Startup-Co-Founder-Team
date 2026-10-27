@@ -41,12 +41,20 @@ class MarketAnalystAgent(BaseAgent):
 
         # 3. Assemble research context for the prompt (compacted for fast local inference)
         compact_market = [
-            {"title": r.get("title", ""), "snippet": r.get("snippet", "")[:160], "url": r.get("url", "")}
-            for r in market_search.get("results", [])[:3]
+            {
+                "title": r.get("title", ""),
+                "snippet": (r.get("snippet") or r.get("body", ""))[:200],
+                "url": r.get("url") or r.get("href", "")
+            }
+            for r in market_search.get("results", [])[:4]
         ]
         compact_competitors = [
-            {"name": c.get("name", ""), "snippet": c.get("snippet", "")[:160], "url": c.get("url", "")}
-            for c in competitor_search.get("raw_competitor_signals", [])[:4]
+            {
+                "name": c.get("name", ""),
+                "snippet": (c.get("snippet") or c.get("body", ""))[:200],
+                "url": c.get("url") or c.get("href", "")
+            }
+            for c in competitor_search.get("raw_competitor_signals", [])[:5]
         ]
 
         research_context = (
@@ -60,10 +68,11 @@ class MarketAnalystAgent(BaseAgent):
         user_content = (
             f"Please conduct an in-depth market analysis for this startup idea.\n\n"
             f"{research_context}\n"
-            f"Remember:\n"
-            f"- At least 5 competitors with strengths and weaknesses\n"
+            f"Strict Grounding Rules:\n"
+            f"- At least 5 competitors with concrete strengths and weaknesses\n"
             f"- At least 3 risks\n"
-            f"- Every TAM/SAM/SOM number must have a source_url and 'estimated': true if derived"
+            f"- Every TAM/SAM/SOM number must include a verified source_url from the signals, else is_assumption must be true.\n"
+            f"- Include retrieved_at date."
         )
 
         output, meta = await self.execute_structured(
@@ -71,6 +80,15 @@ class MarketAnalystAgent(BaseAgent):
             schema=MarketAnalystOutput,
             temperature=0.2
         )
+
+        # Enforce grounding integrity
+        from datetime import datetime, timezone
+        today_iso = datetime.now(timezone.utc).date().isoformat()
+        for metric in [output.tam, output.sam, output.som]:
+            if not metric.retrieved_at:
+                metric.retrieved_at = today_iso
+            if not metric.source_url or not str(metric.source_url).startswith("http"):
+                metric.is_assumption = True
 
         if market_search.get("low_confidence") or competitor_search.get("low_confidence"):
             meta["low_confidence"] = True

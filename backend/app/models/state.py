@@ -26,5 +26,6 @@ class RunState(TypedDict):
     errors: List[str]
     debate_round: int
     user_id: Optional[str]
+    verification: Optional[Dict[str, Any]]
     _last_review: Optional[Dict[str, Any]]
     _debate_resolved: Optional[bool]
