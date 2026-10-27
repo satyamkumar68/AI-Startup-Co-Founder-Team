@@ -4,6 +4,7 @@ import time
 from typing import Dict, Any, List, Optional, Callable, Awaitable, Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import interrupt
 
 from backend.app.models.state import RunState
 from backend.app.models.schemas import MarketAnalystOutput, ProductManagerOutput, TechArchitectOutput, PitchWriterOutput, CEOCriticReview
@@ -277,6 +278,37 @@ class CoFounderWorkflow:
             "_last_review": review.model_dump()
         }
 
+    async def human_review_node(self, state: RunState) -> Dict[str, Any]:
+        """Optional Human-in-the-Loop review interrupt before technical architecture."""
+        enable_human = state.get("options", {}).get("enable_human_review", False)
+        if not enable_human:
+            return {}
+
+        await self._emit_event(
+            "awaiting_human_review",
+            deliverable="prd",
+            content=state.get("prd")
+        )
+
+        user_feedback = interrupt({
+            "type": "human_review",
+            "target": "prd",
+            "content": state.get("prd"),
+            "message": "Review and approve or edit the PRD deliverable before technical architecture."
+        })
+
+        updates: Dict[str, Any] = {}
+        if isinstance(user_feedback, dict):
+            if user_feedback.get("edited_prd"):
+                updates["prd"] = user_feedback["edited_prd"]
+            if user_feedback.get("feedback"):
+                errors = list(state.get("errors") or [])
+                errors.append(f"Human reviewer feedback: {user_feedback['feedback']}")
+                updates["errors"] = errors
+
+        await self._emit_event("human_review_completed", feedback=user_feedback)
+        return updates
+
     async def tech_architect_node(self, state: RunState) -> Dict[str, Any]:
         """Execute Tech Architect agent."""
         await self._emit_event("agent_started", agent="architect", run_id=state["run_id"])
@@ -473,21 +505,25 @@ class CoFounderWorkflow:
         if self._is_budget_exceeded(state):
             state["status"] = "budget_exceeded"
             return "fact_check"
+
+        enable_human = state.get("options", {}).get("enable_human_review", False)
+        advance_target = "human_review" if enable_human else "tech_architect"
+
         mode = state.get("mode") or self.mode
         if mode == "multi_no_debate":
-            return "tech_architect"
+            return advance_target
         scores = state.get("scores", {}).get("prd", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("prd", 0)
         threshold = state.get("options", {}).get("score_threshold", settings.SCORE_THRESHOLD)
 
         if score >= threshold:
-            return "tech_architect"
+            return advance_target
         elif retries < settings.MAX_RETRIES_PER_AGENT:
             state.setdefault("retries", {})["prd"] = retries + 1
             return "product_manager"
         else:
-            return "tech_architect"
+            return advance_target
 
     def should_retry_architect(self, state: RunState) -> str:
         """Route Tech Architect after CEO review."""
@@ -562,6 +598,7 @@ class CoFounderWorkflow:
         builder.add_node("review_market", self.review_market_node)
         builder.add_node("product_manager", self.product_manager_node)
         builder.add_node("review_pm", self.review_pm_node)
+        builder.add_node("human_review", self.human_review_node)
         builder.add_node("tech_architect", self.tech_architect_node)
         builder.add_node("review_architect", self.review_architect_node)
         builder.add_node("debate_round", self.debate_round_node)
@@ -598,11 +635,13 @@ class CoFounderWorkflow:
             "review_pm",
             self.should_retry_pm,
             {
+                "human_review": "human_review",
                 "tech_architect": "tech_architect",
                 "product_manager": "product_manager",
                 "fact_check": "fact_check"
             }
         )
+        builder.add_edge("human_review", "tech_architect")
 
         builder.add_edge("tech_architect", "review_architect")
         builder.add_conditional_edges(

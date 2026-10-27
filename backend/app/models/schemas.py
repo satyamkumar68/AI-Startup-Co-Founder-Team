@@ -261,6 +261,8 @@ class RunOptions(BaseModel):
     score_threshold: float = Field(default=7.0, ge=1.0, le=10.0, description="Minimum score to pass CEO gate")
     model_override: Optional[str] = Field(default=None, description="Optional LLM model override")
     fallback_models: List[str] = Field(default_factory=list, description="Ordered list of fallback models for auto-switch")
+    mode: Optional[Literal["single_agent", "multi_no_debate", "multi_debate"]] = Field(default=None, description="Run mode for ablation studies")
+    enable_human_review: bool = Field(default=False, description="Enable human-in-the-loop review interrupt before tech architecture")
 
 
 class RunCreateRequest(BaseModel):
@@ -272,14 +274,14 @@ class RunCreateRequest(BaseModel):
 class RunCreateResponse(BaseModel):
     """POST /runs 202 response."""
     run_id: str
-    status: Literal["queued", "running", "completed", "failed", "cancelled"] = "queued"
+    status: Literal["queued", "running", "awaiting_approval", "completed", "failed", "cancelled", "needs_review", "budget_exceeded"] = "queued"
 
 
 class RunDetailResponse(BaseModel):
     """GET /runs/{run_id} response."""
     run_id: str
     idea: str
-    status: Literal["queued", "running", "completed", "failed", "cancelled"]
+    status: Literal["queued", "running", "awaiting_approval", "completed", "failed", "cancelled", "needs_review", "budget_exceeded"]
     market: Optional[Dict[str, Any]] = None
     prd: Optional[Dict[str, Any]] = None
     architecture: Optional[Dict[str, Any]] = None
@@ -289,6 +291,28 @@ class RunDetailResponse(BaseModel):
     completed_at: Optional[str] = None
     total_tokens: int = 0
     total_cost_usd: float = 0.0
+
+
+class RunResumeRequest(BaseModel):
+    """POST /runs/{run_id}/resume request body."""
+    approved: bool = Field(default=True, description="Whether human reviewer approved deliverable")
+    edited_prd: Optional[Dict[str, Any]] = Field(default=None, description="Optional modified PRD deliverable")
+    feedback: Optional[str] = Field(default=None, description="Human reviewer notes or feedback")
+
+
+class RunResumeResponse(BaseModel):
+    """POST /runs/{run_id}/resume response."""
+    run_id: str
+    status: str
+    message: str
+
+
+class RunPendingResponse(BaseModel):
+    """GET /runs/{run_id}/pending response."""
+    run_id: str
+    awaiting_approval: bool
+    interrupt_payload: Optional[Dict[str, Any]] = None
+    prd: Optional[Dict[str, Any]] = None
 
 
 class RunRerunRequest(BaseModel):

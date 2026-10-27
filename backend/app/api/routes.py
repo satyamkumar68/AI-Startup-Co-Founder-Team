@@ -21,9 +21,12 @@ from backend.app.models.schemas import (
     RunRerunRequest,
     HealthResponse,
     DebateTranscriptResponse,
+    RunResumeRequest,
+    RunResumeResponse,
+    RunPendingResponse,
 )
 from backend.app.api.websocket import ws_manager
-from backend.app.worker import dispatch_run, cancel_run
+from backend.app.worker import dispatch_run, cancel_run, ACTIVE_WORKFLOWS, resume_run_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -286,6 +289,49 @@ async def cancel_run_endpoint(
         _RUNS_MEM_STORE[run_id]["status"] = "cancelled"
 
     return {"message": "Run cancelled successfully", "run_id": run_id, "status": "cancelled"}
+
+
+@router.get("/runs/{run_id}/pending", response_model=RunPendingResponse)
+async def get_run_pending_approval(run_id: str):
+    """Check if a run is currently awaiting human review approval (API HITL)."""
+    wf_entry = ACTIVE_WORKFLOWS.get(run_id)
+    if not wf_entry:
+        if run_id in _RUNS_MEM_STORE and _RUNS_MEM_STORE[run_id].get("status") == "awaiting_approval":
+            return RunPendingResponse(
+                run_id=run_id,
+                awaiting_approval=True,
+                prd=_RUNS_MEM_STORE[run_id].get("prd")
+            )
+        return RunPendingResponse(run_id=run_id, awaiting_approval=False)
+
+    state = wf_entry.get("state", {})
+    interrupt_info = state.get("__interrupt__")
+    payload = interrupt_info[0].value if interrupt_info else None
+    return RunPendingResponse(
+        run_id=run_id,
+        awaiting_approval=True,
+        interrupt_payload=payload if isinstance(payload, dict) else {"details": str(payload)},
+        prd=state.get("prd")
+    )
+
+
+@router.post("/runs/{run_id}/resume", response_model=RunResumeResponse)
+async def resume_run_endpoint(run_id: str, req: RunResumeRequest):
+    """Resume execution of a run paused at human review interrupt (API HITL)."""
+    if run_id not in ACTIVE_WORKFLOWS:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run {run_id} is not currently awaiting review approval."
+        )
+
+    import asyncio
+    asyncio.create_task(resume_run_pipeline(run_id, req.model_dump()))
+
+    return RunResumeResponse(
+        run_id=run_id,
+        status="running",
+        message="Workflow execution resumed with human reviewer input."
+    )
 
 
 @router.post("/runs/{run_id}/rerun", response_model=RunCreateResponse, status_code=status.HTTP_202_ACCEPTED)

@@ -21,6 +21,147 @@ logger = logging.getLogger(__name__)
 
 # Registry of active asyncio tasks for cancellation support (FR-12)
 ACTIVE_RUN_TASKS: Dict[str, asyncio.Task] = {}
+# Registry of active workflows awaiting human review approval
+ACTIVE_WORKFLOWS: Dict[str, Dict[str, Any]] = {}
+
+
+async def _persist_and_broadcast_run_completion(
+    run_id: str,
+    final_state: RunState,
+    options: Dict[str, Any],
+    event_broadcaster: Any
+) -> None:
+    """Helper to persist all final deliverables to DB and broadcast run completion."""
+    final_status = final_state.get("status", "completed")
+
+    async with AsyncSessionLocal() as session:
+        try:
+            run_uuid = uuid.UUID(run_id)
+
+            # Persist Agent Outputs
+            for agent_name, key in [
+                ("market_analyst", "market"),
+                ("pm", "prd"),
+                ("architect", "architecture"),
+                ("pitch_writer", "pitch")
+            ]:
+                data = final_state.get(key)
+                if data:
+                    out_rec = AgentOutput(
+                        run_id=run_uuid,
+                        agent=agent_name,
+                        version=1,
+                        output=data
+                    )
+                    session.add(out_rec)
+
+            # Persist Scores
+            for target, score_vals in final_state.get("scores", {}).items():
+                for v_idx, sc in enumerate(score_vals):
+                    score_rec = Score(
+                        run_id=run_uuid,
+                        target_agent=target,
+                        version=v_idx + 1,
+                        score=sc,
+                        passed=sc >= options.get("score_threshold", settings.SCORE_THRESHOLD)
+                    )
+                    session.add(score_rec)
+
+            # Persist Debate Messages
+            for msg in final_state.get("debate_log", []):
+                d_rec = DebateMessage(
+                    run_id=run_uuid,
+                    round=msg.get("round", 1),
+                    from_agent=msg.get("from_agent", ""),
+                    to_agent=msg.get("to_agent", ""),
+                    content=msg.get("content", {})
+                )
+                session.add(d_rec)
+
+            # Update Run Completion Status
+            total_tokens = final_state.get("token_usage", {}).get("total", 0)
+            total_cost = (total_tokens / 1000) * 0.005
+
+            up_query = (
+                update(Run)
+                .where(Run.id == run_uuid)
+                .values(
+                    status=final_status,
+                    total_tokens=total_tokens,
+                    total_cost_usd=total_cost,
+                    completed_at=datetime.now(timezone.utc)
+                )
+            )
+            await session.execute(up_query)
+            await session.commit()
+        except Exception as db_err:
+            logger.error(f"Error persisting run results to database: {db_err}")
+
+    # Sync memory store fallback
+    try:
+        from backend.app.api.routes import _RUNS_MEM_STORE
+        if run_id in _RUNS_MEM_STORE:
+            _RUNS_MEM_STORE[run_id]["status"] = final_status
+            _RUNS_MEM_STORE[run_id]["market"] = final_state.get("market")
+            _RUNS_MEM_STORE[run_id]["prd"] = final_state.get("prd")
+            _RUNS_MEM_STORE[run_id]["architecture"] = final_state.get("architecture")
+            _RUNS_MEM_STORE[run_id]["pitch"] = final_state.get("pitch")
+            _RUNS_MEM_STORE[run_id]["scores"] = final_state.get("scores", {})
+            _RUNS_MEM_STORE[run_id]["debate_messages"] = final_state.get("debate_log", [])
+            _RUNS_MEM_STORE[run_id]["total_tokens"] = total_tokens
+            _RUNS_MEM_STORE[run_id]["total_cost_usd"] = total_cost
+            _RUNS_MEM_STORE[run_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
+    except Exception:
+        pass
+
+    export_results = {
+        fmt: f"/api/v1/runs/{run_id}/export?format={fmt}"
+        for fmt in ["pdf", "pptx", "md", "csv"]
+    }
+
+    # Broadcast run completed event
+    await event_broadcaster({
+        "type": "run_completed",
+        "status": final_status,
+        "exports": export_results
+    })
+
+
+async def resume_run_pipeline(run_id: str, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Resume execution of an interrupted workflow at human review checkpoint."""
+    from langgraph.types import Command
+    wf_entry = ACTIVE_WORKFLOWS.get(run_id)
+    if not wf_entry:
+        raise ValueError(f"No active paused workflow found for run_id {run_id}")
+
+    workflow: CoFounderWorkflow = wf_entry["workflow"]
+    options: Dict[str, Any] = wf_entry["options"]
+    event_broadcaster = wf_entry["event_broadcaster"]
+
+    logger.info(f"Resuming run {run_id} with human reviewer input: {feedback_data}")
+
+    # Update status to running
+    async with AsyncSessionLocal() as session:
+        try:
+            run_uuid = uuid.UUID(run_id)
+            await session.execute(update(Run).where(Run.id == run_uuid).values(status="running"))
+            await session.commit()
+        except Exception:
+            pass
+
+    from backend.app.api.routes import _RUNS_MEM_STORE
+    if run_id in _RUNS_MEM_STORE:
+        _RUNS_MEM_STORE[run_id]["status"] = "running"
+
+    config = {"configurable": {"thread_id": run_id}}
+    final_state = await workflow.graph.ainvoke(
+        Command(resume=feedback_data),
+        config=config
+    )
+
+    ACTIVE_WORKFLOWS.pop(run_id, None)
+    await _persist_and_broadcast_run_completion(run_id, final_state, options, event_broadcaster)
+    return final_state
 
 
 async def execute_run_pipeline(run_id: str, idea: str, options: Dict[str, Any]) -> None:
@@ -158,102 +299,36 @@ async def execute_run_pipeline(run_id: str, idea: str, options: Dict[str, Any]) 
             config={"configurable": {"thread_id": run_id}}
         )
 
-        final_status = final_state.get("status", "completed")
+        if final_state.get("__interrupt__"):
+            logger.info(f"Run {run_id} paused at human review interrupt.")
+            ACTIVE_WORKFLOWS[run_id] = {
+                "workflow": workflow,
+                "options": options,
+                "event_broadcaster": event_broadcaster,
+                "state": final_state
+            }
+            async with AsyncSessionLocal() as session:
+                try:
+                    run_uuid = uuid.UUID(run_id)
+                    await session.execute(update(Run).where(Run.id == run_uuid).values(status="awaiting_approval"))
+                    await session.commit()
+                except Exception as e:
+                    logger.warning(f"Could not update status to awaiting_approval: {e}")
 
-        # 3. Persist all outputs, scores, and debate messages to DB
-        async with AsyncSessionLocal() as session:
-            try:
-                run_uuid = uuid.UUID(run_id)
-
-                # Persist Agent Outputs
-                for agent_name, key in [
-                    ("market_analyst", "market"),
-                    ("pm", "prd"),
-                    ("architect", "architecture"),
-                    ("pitch_writer", "pitch")
-                ]:
-                    data = final_state.get(key)
-                    if data:
-                        out_rec = AgentOutput(
-                            run_id=run_uuid,
-                            agent=agent_name,
-                            version=1,
-                            output=data
-                        )
-                        session.add(out_rec)
-
-                # Persist Scores
-                for target, score_vals in final_state.get("scores", {}).items():
-                    for v_idx, sc in enumerate(score_vals):
-                        score_rec = Score(
-                            run_id=run_uuid,
-                            target_agent=target,
-                            version=v_idx + 1,
-                            score=sc,
-                            passed=sc >= options.get("score_threshold", settings.SCORE_THRESHOLD)
-                        )
-                        session.add(score_rec)
-
-                # Persist Debate Messages
-                for msg in final_state.get("debate_log", []):
-                    d_rec = DebateMessage(
-                        run_id=run_uuid,
-                        round=msg.get("round", 1),
-                        from_agent=msg.get("from_agent", ""),
-                        to_agent=msg.get("to_agent", ""),
-                        content=msg.get("content", {})
-                    )
-                    session.add(d_rec)
-
-
-                # Update Run Completion Status
-                total_tokens = final_state.get("token_usage", {}).get("total", 0)
-                # Compute estimated cost based on token usage
-                total_cost = (total_tokens / 1000) * 0.005
-
-                up_query = (
-                    update(Run)
-                    .where(Run.id == run_uuid)
-                    .values(
-                        status=final_status,
-                        total_tokens=total_tokens,
-                        total_cost_usd=total_cost,
-                        completed_at=datetime.now(timezone.utc)
-                    )
-                )
-                await session.execute(up_query)
-                await session.commit()
-            except Exception as db_err:
-                logger.error(f"Error persisting run results to database: {db_err}")
-
-        # Sync memory store fallback
-        try:
             from backend.app.api.routes import _RUNS_MEM_STORE
             if run_id in _RUNS_MEM_STORE:
-                _RUNS_MEM_STORE[run_id]["status"] = final_status
-                _RUNS_MEM_STORE[run_id]["market"] = final_state.get("market")
+                _RUNS_MEM_STORE[run_id]["status"] = "awaiting_approval"
                 _RUNS_MEM_STORE[run_id]["prd"] = final_state.get("prd")
-                _RUNS_MEM_STORE[run_id]["architecture"] = final_state.get("architecture")
-                _RUNS_MEM_STORE[run_id]["pitch"] = final_state.get("pitch")
-                _RUNS_MEM_STORE[run_id]["scores"] = final_state.get("scores", {})
-                _RUNS_MEM_STORE[run_id]["debate_messages"] = final_state.get("debate_log", [])
-                _RUNS_MEM_STORE[run_id]["total_tokens"] = total_tokens
-                _RUNS_MEM_STORE[run_id]["total_cost_usd"] = total_cost
-                _RUNS_MEM_STORE[run_id]["completed_at"] = datetime.now(timezone.utc).isoformat()
-        except Exception:
-            pass
+                _RUNS_MEM_STORE[run_id]["market"] = final_state.get("market")
 
-        export_results = {
-            fmt: f"/api/v1/runs/{run_id}/export?format={fmt}"
-            for fmt in ["pdf", "pptx", "md", "csv"]
-        }
+            await event_broadcaster({
+                "type": "awaiting_human_review",
+                "deliverable": "prd",
+                "content": final_state.get("prd")
+            })
+            return
 
-        # 5. Broadcast run completed event
-        await event_broadcaster({
-            "type": "run_completed",
-            "status": final_status,
-            "exports": export_results
-        })
+        await _persist_and_broadcast_run_completion(run_id, final_state, options, event_broadcaster)
 
     except asyncio.CancelledError:
         logger.info(f"Run {run_id} was cancelled by user.")
