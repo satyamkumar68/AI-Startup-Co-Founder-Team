@@ -33,6 +33,7 @@ client_secrets.json
 cofounder.db
 exports_storage/
 data/
+!data/cloud_pricing.json
 
 # ------------------------------------------------------------------------------
 # 3. Python Runtime & Build Artifacts
