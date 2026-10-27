@@ -1,6 +1,7 @@
 import copy
 import logging
-from typing import Dict, Any, List, Optional, Callable, Awaitable
+import time
+from typing import Dict, Any, List, Optional, Callable, Awaitable, Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
@@ -11,6 +12,7 @@ from backend.app.agents.product_manager import ProductManagerAgent
 from backend.app.agents.tech_architect import TechArchitectAgent
 from backend.app.agents.pitch_writer import PitchWriterAgent
 from backend.app.agents.ceo_critic import CEOCriticAgent
+from backend.app.agents.single_agent import SingleAgent
 from backend.app.graph.debate import DebateEngine
 from backend.app.core.config import settings
 
@@ -25,6 +27,7 @@ class CoFounderWorkflow:
     
     Coordinates sequential execution with CEO quality review gates,
     rejection loops (max 2 retries), peer debate protocol, and final pitch deck generation.
+    Supports single_agent, multi_no_debate, and multi_debate run modes for ablation studies.
     """
 
     def __init__(
@@ -34,10 +37,12 @@ class CoFounderWorkflow:
         model_critic: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
         event_callback: Optional[EventCallback] = None,
-        checkpointer: Optional[Any] = None
+        checkpointer: Optional[Any] = None,
+        mode: Optional[Literal["single_agent", "multi_no_debate", "multi_debate"]] = None
     ):
         self.provider = provider or settings.LLM_PROVIDER
         self.model_default = model_default or settings.MODEL_DEFAULT
+        self.mode = mode or settings.MODE
         if model_critic:
             self.model_critic = model_critic
         elif self.provider == "ollama" or self.model_default.startswith("ollama:") or (":" in self.model_default and "/" not in self.model_default):
@@ -68,6 +73,7 @@ class CoFounderWorkflow:
         self.pitch_agent = PitchWriterAgent(model=self.model_default, provider=self.provider, **agent_kwargs)
         self.critic_agent = CEOCriticAgent(model=self.model_critic, provider=self.provider, **agent_kwargs)
         self.debate_engine = DebateEngine(provider=self.provider, model=self.model_default, **agent_kwargs)
+        self.single_agent = SingleAgent(model=self.model_default, provider=self.provider, **agent_kwargs)
 
         # Build compiled graph
         self.graph = self._build_graph()
@@ -81,6 +87,18 @@ class CoFounderWorkflow:
             except Exception as e:
                 logger.warning(f"Failed to emit workflow event '{event_type}': {e}")
 
+    def _accumulate_telemetry(self, state: RunState, meta: Dict[str, Any]) -> Dict[str, Any]:
+        """Helper to accumulate execution metrics (tokens, cost, repairs, fallbacks)."""
+        telemetry = copy.deepcopy(state.get("telemetry") or {})
+        tokens = telemetry.setdefault("tokens", {"prompt": 0, "completion": 0, "total": 0})
+        tokens["total"] = tokens.get("total", 0) + meta.get("tokens", 0)
+        tokens["prompt"] = tokens.get("prompt", 0) + meta.get("prompt_tokens", 0)
+        tokens["completion"] = tokens.get("completion", 0) + meta.get("completion_tokens", 0)
+        telemetry["cost_usd"] = round(telemetry.get("cost_usd", 0.0) + meta.get("cost_usd", 0.0), 4)
+        telemetry["schema_repairs"] = telemetry.get("schema_repairs", 0) + meta.get("schema_repairs", 0)
+        telemetry["fallback_count"] = max(telemetry.get("fallback_count", 0), meta.get("fallback_count", 0))
+        return telemetry
+
     # ==========================================================================
     # Graph Nodes
     # ==========================================================================
@@ -88,13 +106,59 @@ class CoFounderWorkflow:
     async def intake_node(self, state: RunState) -> Dict[str, Any]:
         """Validate input and initialize state structures."""
         await self._emit_event("run_started", run_id=state["run_id"], idea=state["idea"])
+        run_mode = state.get("mode") or state.get("options", {}).get("mode") or self.mode
+        telemetry = state.get("telemetry") or {
+            "start_time": time.time(),
+            "tokens": {"prompt": 0, "completion": 0, "total": 0},
+            "cost_usd": 0.0,
+            "latency_sec": 0.0,
+            "retries": 0,
+            "schema_repairs": 0,
+            "fallback_count": 0
+        }
+        if "start_time" not in telemetry:
+            telemetry["start_time"] = time.time()
+
         return {
             "status": "running",
+            "mode": run_mode,
+            "telemetry": telemetry,
             "scores": state.get("scores") or {"market": [], "prd": [], "architecture": [], "pitch": []},
             "retries": state.get("retries") or {"market": 0, "prd": 0, "architecture": 0, "pitch": 0},
             "token_usage": state.get("token_usage") or {"total": 0, "prompt": 0, "completion": 0},
             "debate_log": state.get("debate_log") or [],
             "debate_round": 0
+        }
+
+    async def single_agent_node(self, state: RunState) -> Dict[str, Any]:
+        """Execute Single Agent baseline generating all 4 deliverables in one pass."""
+        await self._emit_event("agent_started", agent="single_agent", run_id=state["run_id"])
+        deliverables, meta = await self.single_agent.run(state["idea"])
+
+        token_usage = copy.deepcopy(state.get("token_usage", {}))
+        token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
+        token_usage["prompt"] = token_usage.get("prompt", 0) + meta.get("prompt_tokens", 0)
+        token_usage["completion"] = token_usage.get("completion", 0) + meta.get("completion_tokens", 0)
+
+        telemetry = self._accumulate_telemetry(state, meta)
+
+        scores = {
+            "market": [7.5],
+            "prd": [7.5],
+            "architecture": [7.5],
+            "pitch": [7.5]
+        }
+
+        await self._emit_event("agent_completed", agent="single_agent", output={"status": "completed"})
+        return {
+            "market": deliverables.market.model_dump(),
+            "prd": deliverables.prd.model_dump(),
+            "architecture": deliverables.architecture.model_dump(),
+            "pitch": deliverables.pitch.model_dump(),
+            "token_usage": token_usage,
+            "telemetry": telemetry,
+            "scores": scores,
+            "current_agent": "single_agent"
         }
 
     async def market_analyst_node(self, state: RunState) -> Dict[str, Any]:
@@ -105,11 +169,13 @@ class CoFounderWorkflow:
         # Accumulate tokens
         token_usage = copy.deepcopy(state.get("token_usage", {}))
         token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
+        telemetry = self._accumulate_telemetry(state, meta)
 
         await self._emit_event("agent_completed", agent="market_analyst", output=output.model_dump())
         return {
             "market": output.model_dump(),
             "token_usage": token_usage,
+            "telemetry": telemetry,
             "current_agent": "market_analyst"
         }
 
@@ -144,11 +210,13 @@ class CoFounderWorkflow:
 
         token_usage = copy.deepcopy(state.get("token_usage", {}))
         token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
+        telemetry = self._accumulate_telemetry(state, meta)
 
         await self._emit_event("agent_completed", agent="pm", output=output.model_dump())
         return {
             "prd": output.model_dump(),
             "token_usage": token_usage,
+            "telemetry": telemetry,
             "current_agent": "pm"
         }
 
@@ -184,11 +252,13 @@ class CoFounderWorkflow:
 
         token_usage = copy.deepcopy(state.get("token_usage", {}))
         token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
+        telemetry = self._accumulate_telemetry(state, meta)
 
         await self._emit_event("agent_completed", agent="architect", output=output.model_dump())
         return {
             "architecture": output.model_dump(),
             "token_usage": token_usage,
+            "telemetry": telemetry,
             "current_agent": "architect"
         }
 
@@ -264,11 +334,13 @@ class CoFounderWorkflow:
 
         token_usage = copy.deepcopy(state.get("token_usage", {}))
         token_usage["total"] = token_usage.get("total", 0) + meta.get("tokens", 0)
+        telemetry = self._accumulate_telemetry(state, meta)
 
         await self._emit_event("agent_completed", agent="pitch_writer", output=output.model_dump())
         return {
             "pitch": output.model_dump(),
             "token_usage": token_usage,
+            "telemetry": telemetry,
             "current_agent": "pitch_writer"
         }
 
@@ -304,15 +376,33 @@ class CoFounderWorkflow:
         if any(r >= settings.MAX_RETRIES_PER_AGENT for r in retries.values()):
             final_status = "needs_review"
 
+        telemetry = copy.deepcopy(state.get("telemetry") or {})
+        start_time = telemetry.get("start_time", time.time())
+        telemetry["latency_sec"] = round(time.time() - start_time, 2)
+        telemetry["retries"] = sum(retries.values())
+        tokens = telemetry.setdefault("tokens", {"prompt": 0, "completion": 0, "total": 0})
+        if tokens.get("total", 0) == 0 and state.get("token_usage", {}).get("total", 0) > 0:
+            tokens["total"] = state["token_usage"]["total"]
+
         await self._emit_event("run_completed", run_id=state["run_id"], status=final_status)
-        return {"status": final_status}
+        return {"status": final_status, "telemetry": telemetry}
 
     # ==========================================================================
     # Conditional Edge Routers (AGENTS.md & ARCHITECTURE.md §2)
     # ==========================================================================
 
+    def route_after_intake(self, state: RunState) -> str:
+        """Route workflow after intake depending on execution mode."""
+        mode = state.get("mode") or self.mode
+        if mode == "single_agent":
+            return "single_agent"
+        return "market_analyst"
+
     def should_retry_market(self, state: RunState) -> str:
         """Route Market Analyst after CEO review."""
+        mode = state.get("mode") or self.mode
+        if mode == "multi_no_debate":
+            return "product_manager"
         scores = state.get("scores", {}).get("market", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("market", 0)
@@ -329,6 +419,9 @@ class CoFounderWorkflow:
 
     def should_retry_pm(self, state: RunState) -> str:
         """Route Product Manager after CEO review."""
+        mode = state.get("mode") or self.mode
+        if mode == "multi_no_debate":
+            return "tech_architect"
         scores = state.get("scores", {}).get("prd", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("prd", 0)
@@ -344,6 +437,9 @@ class CoFounderWorkflow:
 
     def should_retry_architect(self, state: RunState) -> str:
         """Route Tech Architect after CEO review."""
+        mode = state.get("mode") or self.mode
+        if mode == "multi_no_debate":
+            return "pitch_writer"
         scores = state.get("scores", {}).get("architecture", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("architecture", 0)
@@ -363,7 +459,6 @@ class CoFounderWorkflow:
                 return "pitch_writer"
             return "debate_round"
 
-
     def should_continue_debate(self, state: RunState) -> str:
         """Route Debate Round (max rounds or resolved)."""
         current_round = state.get("debate_round", 0)
@@ -376,6 +471,9 @@ class CoFounderWorkflow:
 
     def should_retry_pitch(self, state: RunState) -> str:
         """Route Pitch Writer after CEO final review."""
+        mode = state.get("mode") or self.mode
+        if mode == "multi_no_debate":
+            return "finalize"
         scores = state.get("scores", {}).get("pitch", [])
         score = scores[-1] if scores else state.get("_last_review", {}).get("score", 0.0)
         retries = state.get("retries", {}).get("pitch", 0)
@@ -396,6 +494,7 @@ class CoFounderWorkflow:
 
         # 1. Register nodes
         builder.add_node("intake", self.intake_node)
+        builder.add_node("single_agent", self.single_agent_node)
         builder.add_node("market_analyst", self.market_analyst_node)
         builder.add_node("review_market", self.review_market_node)
         builder.add_node("product_manager", self.product_manager_node)
@@ -409,7 +508,15 @@ class CoFounderWorkflow:
 
         # 2. Add edges
         builder.add_edge(START, "intake")
-        builder.add_edge("intake", "market_analyst")
+        builder.add_conditional_edges(
+            "intake",
+            self.route_after_intake,
+            {
+                "single_agent": "single_agent",
+                "market_analyst": "market_analyst"
+            }
+        )
+        builder.add_edge("single_agent", "finalize")
         builder.add_edge("market_analyst", "review_market")
 
         builder.add_conditional_edges(

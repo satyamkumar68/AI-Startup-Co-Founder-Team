@@ -19,6 +19,8 @@ class RunState(TypedDict):
     status: str
     
     # Extended execution tracking
+    mode: Optional[str]
+    telemetry: Optional[Dict[str, Any]]
     options: Dict[str, Any]
     current_agent: Optional[str]
     errors: List[str]

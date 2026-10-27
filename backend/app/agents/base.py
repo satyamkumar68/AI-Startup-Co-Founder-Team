@@ -83,7 +83,9 @@ class BaseAgent:
             "completion_tokens": response.completion_tokens,
             "cost_usd": response.cost_usd,
             "latency_ms": latency_ms,
-            "low_confidence": response.low_confidence
+            "low_confidence": response.low_confidence,
+            "schema_repairs": getattr(response, "schema_repairs", 0),
+            "fallback_count": getattr(response, "fallback_count", 0)
         }
 
         return response.parsed, meta

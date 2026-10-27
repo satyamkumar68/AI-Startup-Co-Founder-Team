@@ -48,10 +48,12 @@ class Settings(BaseSettings):
     ])
 
     # Pipeline Thresholds & Constraints
+    MODE: Literal["single_agent", "multi_no_debate", "multi_debate"] = "multi_debate"
     SCORE_THRESHOLD: float = 7.0
     DEBATE_MAX_ROUNDS: int = 2
     MAX_RETRIES_PER_AGENT: int = 2
     MAX_TOKENS_PER_RUN: int = 80000
+    MAX_BUDGET_USD_PER_RUN: float = 2.0
     RATE_LIMIT_RUNS_PER_HOUR: int = 10
 
     # Exports & Storage

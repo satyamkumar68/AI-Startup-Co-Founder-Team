@@ -24,7 +24,9 @@ class LLMResponse:
         total_tokens: int = 0,
         model: str = "",
         cost_usd: float = 0.0,
-        low_confidence: bool = False
+        low_confidence: bool = False,
+        schema_repairs: int = 0,
+        fallback_count: int = 0
     ):
         self.content = content
         self.parsed = parsed
@@ -34,6 +36,8 @@ class LLMResponse:
         self.model = model
         self.cost_usd = cost_usd
         self.low_confidence = low_confidence
+        self.schema_repairs = schema_repairs
+        self.fallback_count = fallback_count
 
 
 def extract_json_from_text(text: str) -> str:
@@ -102,6 +106,7 @@ class MultiProviderLLM:
 
         self.fallback_models = list(fallback_models) if fallback_models else self._default_fallbacks()
         self.on_switch_callback = on_switch_callback
+        self.fallback_count: int = 0
 
     def _default_fallbacks(self) -> List[str]:
         """Provide automatic fallback models if primary model fails."""
@@ -166,6 +171,7 @@ class MultiProviderLLM:
         if self.provider == "ollama":
             self.timeout = 300.0
 
+        self.fallback_count += 1
         new_desc = f"{self.provider}:{self.model}"
         logger.warning(f"AUTOMATIC FAILOVER: Switching from '{old_desc}' to '{new_desc}' due to: {error_reason}")
 
@@ -360,6 +366,8 @@ class MultiProviderLLM:
             parsed_data = json.loads(cleaned_json_str)
             validated_obj = schema.model_validate(parsed_data)
             response.parsed = validated_obj
+            response.schema_repairs = 0
+            response.fallback_count = self.fallback_count
             return response
         except (json.JSONDecodeError, ValidationError) as initial_err:
             initial_error_msg = str(initial_err)
@@ -393,6 +401,8 @@ class MultiProviderLLM:
                 parsed_repair_data = json.loads(cleaned_repair_json)
                 validated_obj = schema.model_validate(parsed_repair_data)
                 repair_response.parsed = validated_obj
+                repair_response.schema_repairs = 1
+                repair_response.fallback_count = self.fallback_count
                 return repair_response
             except Exception as repair_err:
                 logger.error(f"Repair retry also failed validation: {repair_err}")
@@ -403,7 +413,9 @@ class MultiProviderLLM:
                     return await self.generate_structured(messages, schema, temperature, max_retries)
 
                 repair_response.low_confidence = True
+                repair_response.fallback_count = self.fallback_count
                 raise ValueError(f"Failed to generate structured JSON output matching schema {schema.__name__}: {repair_err}")
 
         response.low_confidence = True
+        response.fallback_count = self.fallback_count
         return response

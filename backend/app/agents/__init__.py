@@ -5,6 +5,7 @@ from backend.app.agents.product_manager import ProductManagerAgent
 from backend.app.agents.tech_architect import TechArchitectAgent
 from backend.app.agents.pitch_writer import PitchWriterAgent
 from backend.app.agents.ceo_critic import CEOCriticAgent
+from backend.app.agents.single_agent import SingleAgent, SingleAgentDeliverables
 
 __all__ = [
     "MultiProviderLLM",
@@ -16,4 +17,6 @@ __all__ = [
     "TechArchitectAgent",
     "PitchWriterAgent",
     "CEOCriticAgent",
+    "SingleAgent",
+    "SingleAgentDeliverables",
 ]
