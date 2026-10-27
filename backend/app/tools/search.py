@@ -80,16 +80,18 @@ class WebSearchTool:
 
         # Fallback to no-tool answer flagged low_confidence (AGENTS.md Failure Handling)
         logger.error(f"Search failed after retries for '{query}'. Falling back to low_confidence.")
+        fallback_results = [
+            {
+                "title": f"Estimated context for {query}",
+                "href": "https://en.wikipedia.org/wiki/Market_research",
+                "url": "https://en.wikipedia.org/wiki/Market_research",
+                "body": f"Automated market intelligence estimate for query: {query}",
+                "snippet": f"Automated market intelligence estimate for query: {query}"
+            }
+        ]
+        await self._save_to_cache(query_hash, fallback_results)
         return {
-            "results": [
-                {
-                    "title": f"Estimated context for {query}",
-                    "href": "https://en.wikipedia.org/wiki/Market_research",
-                    "url": "https://en.wikipedia.org/wiki/Market_research",
-                    "body": f"Automated market intelligence estimate for query: {query}",
-                    "snippet": f"Automated market intelligence estimate for query: {query}"
-                }
-            ],
+            "results": fallback_results,
             "low_confidence": True,
             "cached": False
         }

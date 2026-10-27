@@ -57,13 +57,26 @@ def test_mermaid_validator_sanitizes_arrows_and_spaces():
 
 
 @pytest.mark.asyncio
-async def test_search_tool_caching():
+async def test_search_tool_caching(monkeypatch):
     tool = WebSearchTool(provider="duckduckgo")
-    # First call will execute or hit mock
+    mock_results = [
+        {"title": "CBSE Edtech Market", "href": "https://example.com/edtech", "url": "https://example.com/edtech", "body": "Market data", "snippet": "Market data"}
+    ]
+    async def mock_execute(query, max_results):
+        return mock_results
+    monkeypatch.setattr(tool, "_execute_search", mock_execute)
+
+    # First call will execute and populate cache
     res1 = await tool.search("CBSE Class 10 edtech market", max_results=2)
     assert "results" in res1
     assert len(res1["results"]) > 0
+    assert res1.get("cached") is False
 
-    # Second identical query must hit cache
+    # Second identical query must hit cache without invoking search provider
+    async def should_not_be_called(query, max_results):
+        raise AssertionError("_execute_search should not be called on cache hit")
+    monkeypatch.setattr(tool, "_execute_search", should_not_be_called)
+
     res2 = await tool.search("CBSE Class 10 edtech market", max_results=2)
     assert res2["cached"] is True
+    assert res2["results"] == mock_results
