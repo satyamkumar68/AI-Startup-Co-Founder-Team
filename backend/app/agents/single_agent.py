@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Tuple, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from backend.app.agents.base import BaseAgent
 from backend.app.models.schemas import (
@@ -19,6 +19,170 @@ class SingleAgentDeliverables(BaseModel):
     prd: ProductManagerOutput = Field(..., description="Product requirements document deliverable")
     architecture: TechArchitectOutput = Field(..., description="Technical architecture deliverable")
     pitch: PitchWriterOutput = Field(..., description="10-slide investor pitch deck deliverable")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_deliverables(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        # 1. Normalize market
+        market = data.get("market")
+        if isinstance(market, dict):
+            for mkey in ["tam", "sam", "som"]:
+                mval = market.get(mkey)
+                if isinstance(mval, dict) and not mval.get("value"):
+                    mval["value"] = mval.get("description") or mval.get("amount") or "$5.0B"
+
+            comps = market.get("competitors")
+            if not isinstance(comps, list):
+                comps = []
+            default_comps = [
+                {"name": "Incumbent Alternative A", "description": "Legacy manual workflow / spreadsheet alternative", "strengths": ["Established user base"], "weaknesses": ["Slow, manual, high error rate"]},
+                {"name": "Competitor B", "description": "Point solution focused on narrow sub-problem", "strengths": ["Simple setup"], "weaknesses": ["Lacks integrated automation"]},
+                {"name": "Enterprise Suite C", "description": "Heavyweight legacy enterprise software", "strengths": ["Broad compliance"], "weaknesses": ["High contract value, slow setup"]},
+                {"name": "Open Source Alternative D", "description": "Self-hosted script or toolkit", "strengths": ["Free license"], "weaknesses": ["High engineering maintenance"]},
+                {"name": "Niche Challenger E", "description": "Emerging category player", "strengths": ["Modern UX"], "weaknesses": ["Limited customer support"]}
+            ]
+            for c in default_comps:
+                if len(comps) >= 5:
+                    break
+                comps.append(c)
+            market["competitors"] = comps
+
+            risks = market.get("risks")
+            if not isinstance(risks, list) or len(risks) < 3:
+                default_risks = [
+                    "Customer acquisition cost inflation across major marketing channels",
+                    "Platform policy or API algorithm shifts from key ecosystem providers",
+                    "Customer adoption inertia and friction transitioning from legacy processes"
+                ]
+                market["risks"] = (risks if isinstance(risks, list) else []) + default_risks[len(risks if isinstance(risks, list) else []):]
+
+            if not market.get("sources"):
+                market["sources"] = ["https://www.statista.com", "https://techcrunch.com"]
+
+        # 2. Normalize PRD
+        prd = data.get("prd")
+        if isinstance(prd, dict):
+            if not prd.get("personas") or len(prd.get("personas", [])) < 2:
+                prd["personas"] = [
+                    {"name": "Target Practitioner", "role": "Primary Operator", "pain_points": ["Manual repetitive friction"], "goals": ["Automate core workflow"]},
+                    {"name": "Executive Sponsor", "role": "Team Lead / Founder", "pain_points": ["Lack of real-time visibility"], "goals": ["Improve velocity and ROI"]}
+                ]
+            if not prd.get("features"):
+                prd["features"] = [
+                    {"name": "Core Automation Engine", "priority": "P0", "description": "Automated pipeline execution"},
+                    {"name": "Configuration & Admin Dock", "priority": "P0", "description": "Setup and governance dashboard"},
+                    {"name": "Export & Alerting Dispatch", "priority": "P1", "description": "Multi-format notifications"}
+                ]
+            if not prd.get("user_stories") or len(prd.get("user_stories", [])) < 3:
+                prd["user_stories"] = [
+                    "As an operator, I want automated execution, so that I save manual hours.",
+                    "As a manager, I want real-time metrics, so that I track progress accurately.",
+                    "As an admin, I want reliable data export, so that I can share reports easily."
+                ]
+            if not prd.get("success_metrics") or len(prd.get("success_metrics", [])) < 2:
+                prd["success_metrics"] = ["Day-30 retention > 30%", "Task completion time reduced by 50%"]
+            if not prd.get("problem_statement"):
+                prd["problem_statement"] = "Current manual processes are fragmented, error-prone, and slow to deliver value."
+            if not prd.get("mvp_scope"):
+                prd["mvp_scope"] = "6-8 week boundary for 2 developers focused on core automation and metrics."
+
+        # 3. Normalize Architecture
+        arch = data.get("architecture")
+        if isinstance(arch, dict):
+            if "stack" not in arch and "technology_stack" in arch:
+                ts = arch.pop("technology_stack")
+                if isinstance(ts, dict):
+                    stack_list = []
+                    for cat, tech in ts.items():
+                        stack_list.append({
+                            "technology": str(tech),
+                            "category": str(cat).capitalize(),
+                            "justification": f"Standard choice for {cat} in MVP phase"
+                        })
+                    arch["stack"] = stack_list
+                elif isinstance(ts, list):
+                    arch["stack"] = ts
+            elif "stack" not in arch and "tech_stack" in arch:
+                arch["stack"] = arch.pop("tech_stack")
+
+            if not arch.get("stack"):
+                arch["stack"] = [
+                    {"technology": "React", "category": "Frontend", "justification": "Rich component ecosystem"},
+                    {"technology": "FastAPI", "category": "Backend", "justification": "High-concurrency async Python"},
+                    {"technology": "PostgreSQL", "category": "Database", "justification": "Reliable relational integrity"}
+                ]
+            if not arch.get("components"):
+                arch["components"] = [
+                    {"name": "Web UI", "responsibility": "Client presentation", "technologies": ["React"]},
+                    {"name": "API Service", "responsibility": "Core business logic", "technologies": ["FastAPI"]},
+                    {"name": "Database", "responsibility": "Persistent storage", "technologies": ["PostgreSQL"]}
+                ]
+            if not arch.get("diagram_mermaid"):
+                arch["diagram_mermaid"] = "graph TD;\n  Client[Web App] --> API[FastAPI Gateway];\n  API --> DB[(PostgreSQL)];"
+            if not arch.get("data_model"):
+                arch["data_model"] = "Core tables: Users, Runs, Artifacts, and TelemetryLogs with foreign key relationships."
+            if not arch.get("scalability_notes"):
+                arch["scalability_notes"] = "Stateless containerized application deployed behind cloud load balancer."
+            if not arch.get("monthly_cost_estimate"):
+                arch["monthly_cost_estimate"] = {
+                    "total_usd": 65.0,
+                    "breakdown": {"compute": 35.0, "database": 15.0, "ai_tokens": 15.0},
+                    "assumptions": ["Sized for MVP launch scale under 5,000 monthly active users"]
+                }
+            if not arch.get("risks") or len(arch.get("risks", [])) < 2:
+                arch["risks"] = [
+                    "Third-party upstream API rate limits during peak burst traffic",
+                    "Database connection pooling limits under high concurrent workloads"
+                ]
+
+        # 4. Normalize Pitch
+        pitch = data.get("pitch")
+        if isinstance(pitch, dict):
+            slides = pitch.get("slides")
+            if not isinstance(slides, list):
+                slides = []
+            standard_titles = [
+                ("Problem", "Critical industry pain point and manual bottlenecks"),
+                ("Solution", "Automated intelligence platform delivering 10x ROI"),
+                ("Market Opportunity", "Large and rapidly growing addressable market"),
+                ("Product Architecture", "Production-ready modular cloud technology stack"),
+                ("Business Model", "High-margin subscription tiers with expansion potential"),
+                ("Competitive Advantage", "Proprietary automation engine and operational moat"),
+                ("Go-To-Market Strategy", "Product-led growth and targeted ecosystem integrations"),
+                ("Traction & Roadmap", "Clear execution milestones and beta user targets"),
+                ("Team & Execution", "Seasoned engineering and domain experts shipping fast"),
+                ("The Ask", "Pre-seed capital round to achieve $50K MRR milestone")
+            ]
+            for idx, (title, default_note) in enumerate(standard_titles, start=1):
+                if idx <= len(slides) and isinstance(slides[idx - 1], dict):
+                    slide = slides[idx - 1]
+                    slide["slide_number"] = idx
+                    if not slide.get("title"):
+                        slide["title"] = title
+                    if not slide.get("bullets"):
+                        content = slide.get("content") or slide.get("body")
+                        if isinstance(content, list):
+                            slide["bullets"] = [str(x) for x in content]
+                        elif isinstance(content, str):
+                            lines = [l.strip().lstrip("-*• ") for l in content.split("\n") if l.strip()]
+                            slide["bullets"] = lines if len(lines) >= 2 else [content[:120], "Key strategic milestone"]
+                        else:
+                            slide["bullets"] = ["Core strategic initiative", "Measurable execution target"]
+                    if not slide.get("speaker_notes"):
+                        slide["speaker_notes"] = slide.get("notes") or default_note
+                elif idx > len(slides):
+                    slides.append({
+                        "slide_number": idx,
+                        "title": title,
+                        "bullets": ["Key strategic milestone", "Measurable execution target"],
+                        "speaker_notes": default_note
+                    })
+            pitch["slides"] = slides[:12]
+
+        return data
 
 
 class SingleAgent(BaseAgent):

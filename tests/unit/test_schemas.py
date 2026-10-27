@@ -184,3 +184,50 @@ def test_run_create_request_validation():
     # Too short (< 10 chars)
     with pytest.raises(ValidationError):
         RunCreateRequest(idea="Short")
+
+
+def test_single_agent_deliverables_normalization_from_abbreviated_llm_output():
+    from backend.app.agents.single_agent import SingleAgentDeliverables
+
+    raw_abbreviated = {
+        "market": {
+            "tam": {"description": "Global e-commerce market $15B"},
+            "sam": {"description": "Shopify merchant segment $2B"},
+            "som": {"description": "Year 1 target $50M"},
+            "competitors": [
+                {"name": "Amazon", "description": "Global marketplace"},
+                {"name": "Shopify", "description": "Commerce platform"}
+            ]
+        },
+        "prd": {
+            "problem_statement": "Manual description optimization is slow.",
+            "features": [{"name": "Auto rewrite", "priority": "P0"}]
+        },
+        "architecture": {
+            "technology_stack": {
+                "frontend": "React",
+                "backend": "FastAPI",
+                "database": "PostgreSQL"
+            }
+        },
+        "pitch": {
+            "slides": [
+                {"title": "Problem", "content": "Merchants waste 20 hrs a week writing copy manually."},
+                {"title": "Solution", "content": "AI bulk rewriting engine integrated directly into Shopify."}
+            ]
+        }
+    }
+
+    deliverables = SingleAgentDeliverables.model_validate(raw_abbreviated)
+    assert deliverables.market.tam.value == "Global e-commerce market $15B"
+    assert len(deliverables.market.competitors) >= 5
+    assert len(deliverables.market.risks) >= 3
+    assert len(deliverables.prd.personas) >= 2
+    assert len(deliverables.prd.user_stories) >= 3
+    assert len(deliverables.architecture.stack) >= 3
+    assert deliverables.architecture.stack[0].technology == "React"
+    assert len(deliverables.pitch.slides) == 10
+    assert deliverables.pitch.slides[0].slide_number == 1
+    assert len(deliverables.pitch.slides[0].bullets) >= 2
+    assert deliverables.pitch.slides[0].speaker_notes != ""
+

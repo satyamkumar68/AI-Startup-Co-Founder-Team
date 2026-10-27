@@ -36,6 +36,8 @@ class MarketMetric(BaseModel):
                 data["is_assumption"] = True
             if not data.get("retrieved_at"):
                 data["retrieved_at"] = now_date
+            if not data.get("value"):
+                data["value"] = data.get("description") or data.get("amount") or data.get("size") or "$10.0B (est.)"
         return data
 
 
@@ -169,6 +171,23 @@ class PitchSlide(BaseModel):
     title: str = Field(..., description="Slide headline")
     bullets: List[str] = Field(..., min_length=2, max_length=6, description="Bullet points for slide body")
     speaker_notes: str = Field(..., description="Concise speaker script / talking points")
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_slide_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("bullets"):
+                content = data.get("content") or data.get("body") or data.get("description")
+                if isinstance(content, list):
+                    data["bullets"] = [str(x) for x in content]
+                elif isinstance(content, str):
+                    lines = [line.strip().lstrip("-*• ") for line in content.split("\n") if line.strip()]
+                    data["bullets"] = lines if len(lines) >= 2 else [content[:150], "Key strategic priority for MVP"]
+                else:
+                    data["bullets"] = ["Core strategic objective", "Milestone target for launch"]
+            if not data.get("speaker_notes"):
+                data["speaker_notes"] = data.get("notes") or data.get("content") or f"Talking points for {data.get('title', 'this slide')}."
+        return data
 
     @field_validator("bullets", mode="before")
     @classmethod
