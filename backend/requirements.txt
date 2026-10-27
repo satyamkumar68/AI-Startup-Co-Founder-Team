@@ -12,6 +12,7 @@ langchain-core>=0.2.0,<1.0.0
 # Database & Queue
 sqlalchemy[asyncio]>=2.0.29,<3.0.0
 greenlet>=3.0.3
+aiosqlite>=0.20.0
 asyncpg>=0.29.0,<1.0.0
 psycopg2-binary>=2.9.9
 alembic>=1.13.1,<2.0.0
